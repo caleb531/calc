@@ -487,7 +487,7 @@ C.lcm = function(list) {
 /*** Conversions ***/
 
 // Convert number to comma-separated string
-C.addCommas = function(num) {
+C.commas = function(num) {
 	var parts = String(num).split('.');
 	parts[0] = parts[0]
 		.split('')
