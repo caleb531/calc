@@ -3,7 +3,7 @@ Calc v1.0b
 Caleb Evans
 Licensed under the MIT license
 */
-(function(window, Math, Object, parseFloat, Object, Array, String, undefined) {
+(function(window, Math, parseFloat, String, Object, Array, undefined) {
 
 // Calc function
 function Calc(input) {
@@ -64,7 +64,7 @@ function makeChainable(name) {
 			}
 		}
 	}
-};
+}
 // Revert to original input
 C.fn.end = function() {
 	this[0] = this.original;
@@ -204,7 +204,7 @@ C.sum = function(a, b) {
 C.product = function(list) {
 	var prod = list[0],
 		i = list.length;
-	while (i-=1) {
+	while (--i) {
 		prod *= list[i];
 	}
 	return prod;
@@ -317,7 +317,7 @@ C.factorial = function(num) {
 	} else if (num < 0) {
 		factorial = null; 
 	} else if (num % 1 === 0) {
-		while (num-=1) {
+		while (--num) {
 			factorial *= num;
 		}
 	}
@@ -328,27 +328,6 @@ C.nPr = function(n, r) {
 };
 C.nCr = function(n, r) {
 	return C.factorial(n) / (C.factorial(n - r) * C.factorial(r));
-};
-
-/*** Trigonometry ***/
-
-C.sin = function(angle) {
-	return Math.sin(angle * toRad);
-};
-C.cos = function(angle) {
-	return Math.cos(angle * toRad);
-};
-C.tan = function(angle) {
-	return Math.tan(angle * toRad);
-};
-C.asin = function(num) {
-	return Math.asin(num) / toRad;
-};
-C.acos = function(num) {
-	return Math.acos(num) / toRad;
-};
-C.atan = function(num) {
-	return Math.atan(num) / toRad;
 };
 
 // Convert to fraction
@@ -419,6 +398,47 @@ C.radical = function(num) {
 		}
 	}
 	return ans;
+};
+
+/*** Trigonometry ***/
+
+C.radians = function(angle) {
+	angle *= toRad;
+	var frac = C.fraction(abs(angle * 180 / Calc.pi) / 180).split('/'),
+		sign = '';
+	// Remove "1" from numerator
+	if (frac[0] === '1') {
+		frac[0] = '';
+	} else if (frac[0] === '0') {
+		return '0';
+	}
+	// Remove "1" from denominator
+	if (frac[1] === '1') {
+		frac[1] = '';
+	} else {
+		frac[1] = '/' + frac[1];
+	}
+	// Respect negativity
+	if (angle < 0) {frac[0] = -frac[0];}
+	return frac[0] + 'π' + frac[1];
+};
+C.sin = function(angle) {
+	return Math.sin(angle * toRad);
+};
+C.cos = function(angle) {
+	return Math.cos(angle * toRad);
+};
+C.tan = function(angle) {
+	return Math.tan(angle * toRad);
+};
+C.asin = function(num) {
+	return Math.asin(num) / toRad;
+};
+C.acos = function(num) {
+	return Math.acos(num) / toRad;
+};
+C.atan = function(num) {
+	return Math.atan(num) / toRad;
 };
 
 /*** Factors ***/
@@ -533,4 +553,4 @@ convertAngles();
 watch(C, 'inDegrees', convertAngles);
 
 window.Calc = window.C = C;
-}(window, Math, Object, parseFloat, Object, Array, String));
+}(window, Math, parseFloat, String, Object, Array));
