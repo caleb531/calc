@@ -21,9 +21,7 @@ function Calc(input) {
 }
 
 // Set variables (used as aliases)
-var C = Calc,
-	_C = window.C,
-	_Calc = window.Calc,
+var _Calc = window.Calc,
 	abs = Math.abs,
 	round = Math.round,
 	floor = Math.floor,
@@ -33,17 +31,17 @@ var C = Calc,
 	toRad;
 	
 // Calc properties
-C.pi = Math.PI;
-C.e = Math.E;
-C.inDegrees = false;
-C.fn = C.prototype;
+Calc.pi = Math.PI;
+Calc.e = Math.E;
+Calc.inDegrees = false;
+Calc.fn = Calc.prototype;
 
 // Convert regular methods for the Calc function
 function constructFn(name) {
-	var fn = C[name];
+	var fn = Calc[name];
 	if (typeof fn === 'function') {
 		// Map "this" with method's first argument
-		C.fn[name] = function() {
+		Calc.fn[name] = function() {
 			var args = Array.prototype.slice.call(arguments, 0);
 			this[0] = fn.apply(this, [this[0]].concat(args));
 			return this;
@@ -58,35 +56,32 @@ function makeChainable(name) {
 		return constructFn(name);
 	// Else, apply to all methods
 	} else {
-		for (var p in C) {
-			if (!C.fn[p]) {
+		for (var p in Calc) {
+			if (!Calc.fn[p]) {
 				constructFn(p);
 			}
 		}
 	}
 }
 // Revert to original input
-C.fn.end = function() {
+Calc.fn.end = function() {
 	this[0] = this.original;
 	return this;
 };
 
 // Extend Calc
-C.extend = function(name, fn) {
-	C[name] = fn;
+Calc.extend = function(name, fn) {
+	Calc[name] = fn;
 	makeChainable(name);
-	return C;
+	return Calc;
 };
 
 // Prevent naming conflicts
-C.noConflict = function(deep) {
-	if (window.C === C) {
-		window.C = _C;
-	}
-	if (deep && window.Calc === Calc) {
+Calc.noConflict = function() {
+	if (window.Calc === Calc) {
 		window.Calc = _Calc;
 	}
-	return C;
+	return Calc;
 };
 
 // Convert degrees to radians
@@ -126,22 +121,22 @@ function watch(obj, prop, callback) {
 
 /*** General operations ***/
 
-C.abs = abs;
-C.ceil = ceil;
-C.floor = floor;
-C.round = round;
+Calc.abs = abs;
+Calc.ceil = ceil;
+Calc.floor = floor;
+Calc.round = round;
 
 // Round to n places
-C.places = function(num, places) {
+Calc.places = function(num, places) {
 	if (places === undefined) {places = 2;}
 	return parseFloat(num.toFixed(places));
 };
 // Chop off decimal (different than floor)
-C.chop = function(num) {
+Calc.chop = function(num) {
 	return num | 0;
 };
 // Get random number/index
-C.random = function(a, b) {
+Calc.random = function(a, b) {
 	var type = typeof a;
 	if (type !== 'number') {
 		if (type === 'object') {return (a.length * Math.random()) | 0;}
@@ -153,25 +148,25 @@ C.random = function(a, b) {
 
 /*** Exponents ***/
 
-C.pow = function(base, exp) {
+Calc.pow = function(base, exp) {
 	if (exp === undefined) {exp = 2;}
 	return pow(base, exp);
 };
-C.root = function(base, root) {
+Calc.root = function(base, root) {
 	if (root === undefined) {root = 2;}
 	return pow(base, 1/root);
 };
-C.log = function(num, base) {
+Calc.log = function(num, base) {
 	if (base === undefined) {base = 10;}
 	return log(num) / log(base);
 };
-C.ln = function(num) {
+Calc.ln = function(num) {
 	return log(num);
 };
 
 /*** Statistics ***/
 
-C.sort = function(list, desc) {
+Calc.sort = function(list, desc) {
 	list = list
 		.slice(0)
 		.sort(function(a, b) {
@@ -181,16 +176,16 @@ C.sort = function(list, desc) {
 	if (desc) {list.reverse();}
 	return list;
 };
-C.min = function(list) {
+Calc.min = function(list) {
 	return Math.min.apply(Math, list);
 };
-C.max = function(list) {
+Calc.max = function(list) {
 	return Math.max.apply(Math, list);
 };
-C.range = function(list) {
-	return C.max(list) - C.min(list);
+Calc.range = function(list) {
+	return Calc.max(list) - Calc.min(list);
 };
-C.sum = function(a, b) {
+Calc.sum = function(a, b) {
 	// If b exists, use summation
 	if (b !== undefined) {
 		return (b-a+1)/2 * (a + b);
@@ -201,7 +196,7 @@ C.sum = function(a, b) {
 	}
 	return sum;
 };
-C.product = function(list) {
+Calc.product = function(list) {
 	var prod = list[0],
 		i = list.length;
 	while (--i) {
@@ -209,27 +204,27 @@ C.product = function(list) {
 	}
 	return prod;
 };
-C.mean = function(list) {
-	return C.sum(list) / list.length;
+Calc.mean = function(list) {
+	return Calc.sum(list) / list.length;
 };
-C.geoMean = function(list) {
-	return pow(C.product(list), 1/list.length);
+Calc.geoMean = function(list) {
+	return pow(Calc.product(list), 1/list.length);
 };
-C.median = function(list) {
+Calc.median = function(list) {
 	var med, m1, m2;
-	list = C.sort(list);
+	list = Calc.sort(list);
 	// If list has no true median
 	if (list.length % 2 === 0) {
 		m1 = list[list.length/2 - 1];
 		m2 = list[list.length/2];
-		med = C.mean([m1, m2]);
+		med = Calc.mean([m1, m2]);
 	// But if it does...
 	} else {
 		med = list[(list.length/2) | 0];
 	}
 	return med;
 };
-C.modes = function(list) {
+Calc.modes = function(list) {
 	var map = [],
 		modes = [],
 		maxCount = 1,
@@ -255,12 +250,12 @@ C.modes = function(list) {
 	}
 	return modes;
 };
-C.variance = function(list, pop) {
+Calc.variance = function(list, pop) {
 	var n = list.length,
-		mean = C.mean(list),
+		mean = Calc.mean(list),
 		top = 0,
 		inside, i = n;
-	list = C.sort(list);
+	list = Calc.sort(list);
 	while (i--) {
 		top += pow(list[i]-mean, 2);
 	}
@@ -271,29 +266,29 @@ C.variance = function(list, pop) {
 	}
 	return inside;
 };
-C.stdDev = function(list, pop) {
-	return pow(C.variance(list, pop), 0.5);
+Calc.stdDev = function(list, pop) {
+	return pow(Calc.variance(list, pop), 0.5);
 };
 
 /*** Geometry ***/
 
-C.slope = function(pt1, pt2) {
+Calc.slope = function(pt1, pt2) {
 	var slope = (pt2[1] - pt1[1]) / (pt2[0] - pt1[0]);
 	if (slope === Infinity) {slope = null;}
 	return slope;
 };
-C.dist = function(pt1, pt2) {
+Calc.dist = function(pt1, pt2) {
 	return pow(
 		pow(pt2[0]-pt1[0], 2) + pow(pt2[1]-pt1[1], 2),
 	0.5);
 };
-C.midpt = function(pt1, pt2) {
+Calc.midpt = function(pt1, pt2) {
 	return [
 		(pt1[0]+pt2[0]) / 2,
 		(pt1[1]+pt2[1]) / 2
 	];
 };
-C.pythag = function(sides) {
+Calc.pythag = function(sides) {
 	var missing;
 	if (sides.c === undefined) {
 		missing = pow(pow(sides.a, 2) + pow(sides.b, 2), 0.5);
@@ -304,13 +299,13 @@ C.pythag = function(sides) {
 	}
 	return missing;
 };
-C.hypot = function(a, b) {
+Calc.hypot = function(a, b) {
 	return pow(pow(a, 2) + pow(b, 2), 0.5);
 };
 
 /*** Combinatorics ***/
 
-C.factorial = function(num) {
+Calc.factorial = function(num) {
 	var factorial = num;
 	if (num === 0) {
 		factorial = 1;
@@ -323,15 +318,147 @@ C.factorial = function(num) {
 	}
 	return factorial;
 };
-C.nPr = function(n, r) {
-	return C.factorial(n) / C.factorial(n - r);
+Calc.nPr = function(n, r) {
+	return Calc.factorial(n) / Calc.factorial(n - r);
 };
-C.nCr = function(n, r) {
-	return C.factorial(n) / (C.factorial(n - r) * C.factorial(r));
+Calc.nCr = function(n, r) {
+	return Calc.factorial(n) / (Calc.factorial(n - r) * Calc.factorial(r));
 };
 
+/*** Trigonometry ***/
+
+// Convert angle to radian notation
+Calc.radians = function(angle) {
+	angle *= toRad;
+	var frac = Calc.frac(abs(angle * 180 / Calc.pi) / 180).split('/'),
+		sign = '';
+	// Remove "1" from numerator
+	if (frac[0] === '1') {
+		frac[0] = '';
+	} else if (frac[0] === '0') {
+		return '0';
+	}
+	// Remove "1" from denominator
+	if (frac[1] === '1') {
+		frac[1] = '';
+	} else {
+		frac[1] = '/' + frac[1];
+	}
+	// Respect negativity
+	if (angle < 0) {frac[0] = '-' + frac[0];}
+	return frac[0] + 'π' + frac[1];
+};
+
+// Trig functions
+Calc.sin = function(angle) {
+	return Math.sin(angle * toRad);
+};
+Calc.cos = function(angle) {
+	return Math.cos(angle * toRad);
+};
+Calc.tan = function(angle) {
+	return Math.tan(angle * toRad);
+};
+Calc.asin = function(num) {
+	return Math.asin(num) / toRad;
+};
+Calc.acos = function(num) {
+	return Math.acos(num) / toRad;
+};
+Calc.atan = function(num) {
+	return Math.atan(num) / toRad;
+};
+
+/*** Factors ***/
+
+// Get factors
+Calc.factors = function(list) {
+	if (!list.slice) {list = [list];}
+	var min,
+		factors = [1],
+		matching, n = list.length, f;
+	list = list.slice(0);
+	
+	// Deal with positive numbers only
+	while (n--) {
+		if (list[n] < 0) {
+			list[n] *= -1;
+		}
+	}
+	n = list.length;
+	min = Calc.min(list);
+		
+	// Loop through all possible factors
+	for (f=2; f<=min; f+=1) {
+		matching = 0;
+		while (n--) {
+			// If number is a factor
+			if (list[n] % f === 0) {
+				matching += 1;
+			}
+		}
+		n = list.length;
+		// If number is a common factor
+		if (matching === list.length) {
+			factors.push(f);
+		}
+	}
+	return factors;
+};
+// Get greatest common factor
+Calc.gcf = function(list) {
+	var factors = Calc.factors(list);
+	return factors[factors.length-1];
+};
+
+// Get factors pairs of number
+Calc.factorPairs = function(num) {
+	var factors = Calc.factors(num),
+		pairs = [], factor, f;
+	for (f=0; f<factors.length; f+=1) {
+		factor = factors[f];
+		pairs.push([factor, num/factor]);
+		pairs.push([-factor, -num/factor]);
+	}
+	return pairs;
+};
+
+// Get least common multiple
+Calc.lcm = function(list) {
+	list = Calc.sort(list);
+	var prod = Calc.product(list),
+		lcm, matching, n, m;
+	// Loop through all possible multiples
+	for (m=list[0]; m<=prod; m+=1) {
+		matching = 0;
+		for (n=0; n<list.length; n+=1) {
+			// If number is multiple
+			if (m % list[n] === 0) {
+				matching += 1;
+			}
+		}
+		if (matching === list.length) {
+			lcm = m;
+			break;
+		}
+	}	
+	return lcm;
+};
+
+// Get Fibonacci numbers through n
+Calc.fib = function(n) {
+	var seq = [0], i;
+	if (n > 1) {seq.push(1);}
+	for (i=2; i<n; i+=1) {
+		seq.push(seq[i-1] + seq[i-2]);
+	}
+	return seq;
+}
+
+/*** Conversions ***/
+
 // Convert to fraction
-C.fraction = function(num) {
+Calc.frac = function(num) {
 	var dec = 1,
 		top = 1,
 		bot = 1,
@@ -358,7 +485,7 @@ C.fraction = function(num) {
 };
 
 // Simplify radical
-C.radical = function(num) {
+Calc.radical = function(num) {
 
 	var route, imaginary, i,
 		factor, parts = [], ans;
@@ -366,8 +493,8 @@ C.radical = function(num) {
 	// If number is imaginary
 	if (num < 0) {
 		imaginary = true;
+		num *= -1;
 	}
-	num = abs(num);
 	route = pow(num, 0.5);
 	ans = '√' + num;
 
@@ -400,114 +527,8 @@ C.radical = function(num) {
 	return ans;
 };
 
-/*** Trigonometry ***/
-
-C.radians = function(angle) {
-	angle *= toRad;
-	var frac = C.fraction(abs(angle * 180 / Calc.pi) / 180).split('/'),
-		sign = '';
-	// Remove "1" from numerator
-	if (frac[0] === '1') {
-		frac[0] = '';
-	} else if (frac[0] === '0') {
-		return '0';
-	}
-	// Remove "1" from denominator
-	if (frac[1] === '1') {
-		frac[1] = '';
-	} else {
-		frac[1] = '/' + frac[1];
-	}
-	// Respect negativity
-	if (angle < 0) {frac[0] = -frac[0];}
-	return frac[0] + 'π' + frac[1];
-};
-C.sin = function(angle) {
-	return Math.sin(angle * toRad);
-};
-C.cos = function(angle) {
-	return Math.cos(angle * toRad);
-};
-C.tan = function(angle) {
-	return Math.tan(angle * toRad);
-};
-C.asin = function(num) {
-	return Math.asin(num) / toRad;
-};
-C.acos = function(num) {
-	return Math.acos(num) / toRad;
-};
-C.atan = function(num) {
-	return Math.atan(num) / toRad;
-};
-
-/*** Factors ***/
-
-// Get factors
-C.factors = function(list) {
-	if (!list.splice) {list = [list];}
-	var max = C.sort(list)[list.length-1],
-		factors = [1],
-		matching, n, f;
-		
-	// Loop through all possible factors
-	for (f=2; f<=max; f+=1) {
-		matching = 0;
-		for (n=0; n<list.length; n+=1) {
-			// If number is a factor
-			if (list[n] % f === 0) {
-				matching += 1;
-			}
-		}
-		// If number is a common factor
-		if (matching === list.length) {
-			factors.push(f);
-		}
-	}
-	return factors;
-};
-// Get greatest common factor
-C.gcf = function(list) {
-	var factors = C.factors(list);
-	return factors[factors.length-1];
-};
-// Get factors pairs of number
-C.pairs = function(num) {
-	var factors = C.factors(abs(num)),
-		pairs = [], factor, f;
-	for (f=0; f<factors.length; f+=1) {
-		factor = factors[f];
-		pairs.push([factor, num/factor]);
-		pairs.push([-factor, -num/factor]);
-	}
-	return pairs;
-};
-// Get least common multiple
-C.lcm = function(list) {
-	list = C.sort(list);
-	var prod = C.product(list),
-		lcm, matching, n, m;
-	// Loop through all possible multiples
-	for (m=list[0]; m<=prod; m+=1) {
-		matching = 0;
-		for (n=0; n<list.length; n+=1) {
-			// If number is multiple
-			if (m % list[n] === 0) {
-				matching += 1;
-			}
-		}
-		if (matching === list.length) {
-			lcm = m;
-			break;
-		}
-	}	
-	return lcm;
-};
-
-/*** Conversions ***/
-
 // Convert number to comma-separated string
-C.commas = function(num) {
+Calc.commas = function(num) {
 	var parts = String(num).split('.');
 	parts[0] = parts[0]
 		.split('')
@@ -522,7 +543,7 @@ C.commas = function(num) {
 };
 
 // Convert string to number (and remove commas)
-C.number = function(num) {
+Calc.num = function(num) {
 	var parts = String(num).split('/');
 	num = String(parts[0] / (parts[1] || 1));
 	return parseFloat(num.replace(/,/gi, ''));
@@ -530,27 +551,49 @@ C.number = function(num) {
 
 /*** Conditions ***/
 
-C.isEven = function(num) {
+Calc.isEven = function(num) {
 	return (num % 2 === 0);
 };
-C.isOdd = function(num) {
+Calc.isOdd = function(num) {
 	return (num % 2 === 1);
 };
-C.isInteger = function(num) {
+Calc.isInteger = function(num) {
 	return (num % 1 === 0);
 };
-C.isPrime = function(num) {
-	var factors = C.factors(num);
+Calc.isPrime = function(num) {
+	if (num < 0) {num *= -1;}
+	var factors = Calc.factors(num);
 	return (factors[1] === num);
 };
-C.isFactor = function(factor, num) {
+Calc.isComposite = function(num) {
+	if (num < 0) {num *= -1;}
+	return (num !== 0 && num !== 2 && num % 2 === 0);
+}
+Calc.isFactor = function(factor, num) {
 	return (num % factor === 0);
+};
+// If number is in Fibonacci sequence
+Calc.isFib = function(num) {
+	var seq = [0, 1],
+		ans = false, i;
+	if (num === 0 || num === 1) {
+		ans = true;
+	} else {
+		for (i=2; i<=num+1; i+=1) {
+			seq.push(seq[i-1] + seq[i-2]);
+			if (seq[seq.length-1] === num) {
+				ans = true;
+				break;
+			}
+		}
+	}
+	return ans;
 };
 
 makeChainable();
 // Detect degrees/radians change
 convertAngles();
-watch(C, 'inDegrees', convertAngles);
+watch(Calc, 'inDegrees', convertAngles);
 
-window.Calc = window.C = C;
+window.Calc = window.Calc = Calc;
 }(window, Math, parseFloat, String, Object, Array));
