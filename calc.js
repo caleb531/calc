@@ -28,18 +28,17 @@ var _Calc = window.Calc,
 	ceil = Math.ceil,
 	pow = Math.pow,
 	log = Math.log,
-	toRad;
+	toRad = 1;
 	
 // Calc properties
 Calc.pi = Math.PI;
 Calc.e = Math.E;
-Calc.inDegrees = false;
 Calc.fn = Calc.prototype;
 
 // Convert regular methods for the Calc function
 function constructFn(name) {
 	var fn = Calc[name];
-	if (typeof fn === 'function') {
+	if (fn.call) {
 		// Map "this" with method's first argument
 		Calc.fn[name] = function() {
 			var args = Array.prototype.slice.call(arguments, 0);
@@ -85,39 +84,14 @@ Calc.noConflict = function() {
 };
 
 // Convert degrees to radians
-function convertAngles(newValue) {
-	if (newValue) {
+Calc.useDegrees = function(value) {
+	if (value) {
 		toRad = Math.PI / 180;
-	} else {
+	} else if (value !== undefined) {
 		toRad = 1;
 	}
-	return newValue;
-}
-
-// Detect when a property changes
-function watch(obj, prop, callback) {
-	var op = Object.prototype,
-		define = Object.defineProperty,
-		value = obj[prop];
-	// Set property value
-	function getter() {
-		return value;
-	}
-	function setter(newValue) {
-		return (value = callback.call(obj, newValue));
-	}
-	// If defineProperty is supported
-	if (define) {
-		define(obj, prop, {
-			get: getter,
-			set: setter
-		});
-	// If not supported
-	} else {
-		Object.prototype.__defineGetter__.call(this, prop, getter);
-		Object.prototype.__defineSetter__.call(this, prop, setter);
-	}
-}
+	return (toRad === 1) ? false : true;
+};
 
 /*** General operations ***/
 
@@ -133,13 +107,13 @@ Calc.places = function(num, places) {
 };
 // Chop off decimal (different than floor)
 Calc.chop = function(num) {
-	return num | 0;
+	var rem = num % 1;
+	return num - rem;
 };
 // Get random number/index
 Calc.random = function(a, b) {
 	var type = typeof a;
-	if (type !== 'number') {
-		if (type === 'object') {return (a.length * Math.random()) | 0;}
+	if (b === undefined) {
 		a = 0;
 		b = 1;
 	}
@@ -220,7 +194,7 @@ Calc.median = function(list) {
 		med = Calc.mean([m1, m2]);
 	// But if it does...
 	} else {
-		med = list[(list.length/2) | 0];
+		med = list[floor(list.length/2)];
 	}
 	return med;
 };
@@ -241,7 +215,7 @@ Calc.modes = function(list) {
 			modes = [item];
 			maxCount = map[item];
 		} else if (map[item] === maxCount) {
-			modes.splice(0, 0, item);
+			modes.unshift(item);
 			maxCount = map[item];
 		}
 	}
@@ -373,23 +347,28 @@ Calc.atan = function(num) {
 
 // Get factors
 Calc.factors = function(list) {
-	if (!list.slice) {list = [list];}
-	var min,
-		factors = [1],
-		matching, n = list.length, f;
-	list = list.slice(0);
+	// Create and clone list
+	if (!list.slice) {
+		list = [list];
+	} else {
+		list = list.slice(0);
+	}
+	var matching, max,
+		factors = [1], f,
+		n = list.length;
 	
 	// Deal with positive numbers only
 	while (n--) {
-		if (list[n] < 0) {
-			list[n] *= -1;
-		}
+		list[n] = abs(list[n]);
+		// Eliminate zeroes3
+		if (!list[n]) {list.splice(n, 1);}
 	}
+	
 	n = list.length;
-	min = Calc.min(list);
+	max = Calc.min(list);
 		
 	// Loop through all possible factors
-	for (f=2; f<=min; f+=1) {
+	for (f=2; f<=max; f+=1) {
 		matching = 0;
 		while (n--) {
 			// If number is a factor
@@ -425,18 +404,32 @@ Calc.factorPairs = function(num) {
 
 // Get least common multiple
 Calc.lcm = function(list) {
+	// Create and clone list
+	if (!list.slice) {
+		list = [list];
+	} else {
+		list = list.slice(0);
+	}
+	var prod = 1,
+		n = list.length,
+		lcm, matching, m;
+	// Make all numbers positive
+	while (n--) {
+		list[n] = abs(list[n]);
+		prod *= list[n];
+	}
+	n = list.length;
 	list = Calc.sort(list);
-	var prod = Calc.product(list),
-		lcm, matching, n, m;
 	// Loop through all possible multiples
 	for (m=list[0]; m<=prod; m+=1) {
 		matching = 0;
-		for (n=0; n<list.length; n+=1) {
+		while (n--) {
 			// If number is multiple
 			if (m % list[n] === 0) {
 				matching += 1;
 			}
 		}
+		n = list.length;
 		if (matching === list.length) {
 			lcm = m;
 			break;
@@ -445,15 +438,15 @@ Calc.lcm = function(list) {
 	return lcm;
 };
 
-// Get Fibonacci numbers through n
-Calc.fib = function(n) {
+// Get Fibonacci numbers through index n
+Calc.fib = function(num) {
 	var seq = [0], i;
-	if (n > 1) {seq.push(1);}
-	for (i=2; i<n; i+=1) {
+	if (num > 1) {seq.push(1);}
+	for (i=2; i<=num; i+=1) {
 		seq.push(seq[i-1] + seq[i-2]);
 	}
-	return seq;
-}
+	return seq[num];
+};
 
 /*** Conversions ***/
 
@@ -462,15 +455,19 @@ Calc.frac = function(num) {
 	var dec = 1,
 		top = 1,
 		bot = 1,
-		negative = (num < 0 ? true : false);
-	num = abs(num);
+		negative;
+	// If number is negative
+	if (num < 0) {
+		num = abs(num);
+		negative = true;
+	}
 
 	while (dec !== num) {
 		if (dec < num) {
 			top += 1;
 		} else {
 			bot += 1;
-			top = (num * bot) | 0;
+			top = floor(num * bot);
 		}
 		dec = top / bot;
 	}
@@ -479,7 +476,7 @@ Calc.frac = function(num) {
 		top = 0;
 		bot = 1;
 	} else if (negative) {
-		top *= -1;
+		top = abs(top);
 	}
 	return top + '/' + bot;
 };
@@ -493,7 +490,7 @@ Calc.radical = function(num) {
 	// If number is imaginary
 	if (num < 0) {
 		imaginary = true;
-		num *= -1;
+		num = abs(num);
 	}
 	route = pow(num, 0.5);
 	ans = '√' + num;
@@ -561,14 +558,14 @@ Calc.isInteger = function(num) {
 	return (num % 1 === 0);
 };
 Calc.isPrime = function(num) {
-	if (num < 0) {num *= -1;}
+	num = abs(num);
 	var factors = Calc.factors(num);
 	return (factors[1] === num);
 };
 Calc.isComposite = function(num) {
-	if (num < 0) {num *= -1;}
+	num = abs(num);
 	return (num !== 0 && num !== 2 && num % 2 === 0);
-}
+};
 Calc.isFactor = function(factor, num) {
 	return (num % factor === 0);
 };
@@ -590,10 +587,8 @@ Calc.isFib = function(num) {
 	return ans;
 };
 
+// Make all methods chainable
 makeChainable();
-// Detect degrees/radians change
-convertAngles();
-watch(Calc, 'inDegrees', convertAngles);
 
 window.Calc = window.Calc = Calc;
 }(window, Math, parseFloat, String, Object, Array));
