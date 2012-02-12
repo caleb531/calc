@@ -1,9 +1,9 @@
 /*!
-Calc v1.0
+Calc v1.1b
 Caleb Evans
 Licensed under the MIT license
 */
-(function(window, Math, parseFloat, String, Object, Array, undefined) {
+(function(window, Math, parseFloat, parseInt, String, Object, Array, undefined) {
 
 // Calc function
 function Calc(input) {
@@ -15,7 +15,6 @@ function Calc(input) {
 	} else if (input.constructor === Calc) {
 		return input;
 	}
-	obj.original = input;
 	obj[0] = input;
 	return this;
 }
@@ -29,19 +28,20 @@ var _Calc = window.Calc,
 	pow = Math.pow,
 	exp = Math.exp,
 	log = Math.log,
+	random = Math.random,
 	toRad = 1,
 	radic = '\u221a';
 	
 // Calc properties
-Calc.pi = Math.PI;
-Calc.e = Math.E;
-Calc.phi = 1.618033988749895;
+Calc.PI = Math.PI;
+Calc.E = Math.E;
+Calc.PHI = 1.618033988749895;
 Calc.fn = Calc.prototype;
 
 // Convert regular methods for the Calc function
 function constructFn(name) {
 	var fn = Calc[name];
-	if (fn.call) {
+	if (fn.call && !Calc.fn[name]) {
 		// Map "this" with method's first argument
 		Calc.fn[name] = function() {
 			var args = Array.prototype.slice.call(arguments, 0);
@@ -60,20 +60,26 @@ function makeChainable(name) {
 	// Else, apply to all methods
 	} else {
 		for (p in Calc) {
-			if (!Calc.fn[p]) {
+			if (Calc.hasOwnProperty(p)) {
 				constructFn(p);
 			}
 		}
 	}
 }
+
 // Revert to original input
 Calc.fn.end = function() {
 	this[0] = this.original;
 	return this;
 };
 
+// Return the current result
+Calc.fn.get = function(index) {
+	return this[index];
+};
+
 // Extend Calc
-Calc.extend = function(name, fn) {
+Calc.Extend = function(name, fn) {
 	Calc[name] = fn;
 	makeChainable(name);
 	return fn;
@@ -86,16 +92,6 @@ Calc.noConflict = function() {
 	}
 	return Calc;
 };
-
-// Convert degrees to radians
-function convertAngles(newValue) {
-	if (newValue) {
-		toRad = Math.PI / 180;
-	} else {
-		toRad = 1;
-	}
-	return newValue;
-}
 
 // Convert degrees to radians
 Calc.useDegrees = function(value) {
@@ -112,29 +108,28 @@ Calc.useDegrees = function(value) {
 Calc.abs = abs;
 Calc.ceil = ceil;
 Calc.floor = floor;
-Calc.round = round;
-
-// Round to n places
-Calc.places = function(num, places) {
-	if (places === undefined) {places = 2;}
-	return parseFloat(num.toFixed(places));
+Calc.round = function(num, places) {
+	var rounded;
+	if (places !== undefined) {
+		rounded = parseFloat(num.toFixed(places));
+	} else {
+		rounded = round(num);
+	}
+	return rounded;
 };
+
+// Round to nearest n
+Calc.nearest = function(num, n) {
+	n = n || 1;
+	return round(num / n) * n;
+};
+
 // Chop off decimal (different than floor)
 Calc.chop = function(num) {
 	return num - (num % 1);
 };
-// Get random number/index
-Calc.random = function(a, b) {
-	if (a.slice) {
-		return floor(a.length * Math.random());
-	} else if (b === undefined) {
-		a = 0;
-		b = 1;
-	}
-	return a + (b - a) * Math.random();
-};
 
-// Return 1, -1, or 0 based on sign of number
+// Return 1, -1, or 0 (based on a number's sign)
 Calc.sign = function(num) {
 	var sign;
 	if (num > 0) {
@@ -162,7 +157,24 @@ Calc.log = function(num, base) {
 	return log(num) / log(base);
 };
 Calc.ln = log;
-Calc.exp = exp;
+Calc.Exp = exp;
+
+// Solve quadratic equation
+Calc.quad = function(a, b, c) {
+	var discr = pow(b, 2) - (4*a*c),
+		ans = null;
+	// If answers are real
+	if (discr > 0) {
+		ans = [
+			(-b + pow(discr, 0.5)) / (2*a),
+			(-b - pow(discr, 0.5)) / (2*a)
+		];
+	// If only one answer
+	} else if (discr === 0) {
+		ans = (-b + pow(discr, 0.5)) / (2*a);
+	}
+	return ans;
+};
 
 /*** Statistics ***/
 
@@ -177,8 +189,6 @@ Calc.sort = function(list, fn) {
 			return a - b;
 		});
 	}
-	// Sort descending if chosen
-	if (fn === true) {list.reverse();}
 	return list;
 };
 Calc.min = function(list) {
@@ -191,21 +201,46 @@ Calc.max = function(list) {
 Calc.range = function(list) {
 	return Calc.max(list) - Calc.min(list);
 };
+Calc.thru = function(start, end, step) {
+	var arr = [], i;
+	// If no starting number is specified
+	if (end === undefined) {
+		end = start;
+		start = 0;
+	}
+	// If step is 0 or undefined
+	if (!step) {step = 1;}
+	// If step is positive
+	if (start < end) {
+		for (i=start; i<end; i+=step) {
+			arr.push(i);
+		}
+	// If step is negative
+	} else {
+		for (i=start; i>end; i+=step) {
+			arr.push(i);
+		}
+	}
+	return arr;
+};
 Calc.sum = function(a, b) {
 	// If b exists, use summation
-	if (b !== undefined) {
-		return (b-a+1)/2 * (a + b);
+	if (a.toFixed) {
+		if (b === undefined) {
+			b = a;
+			a = 1;
+		}
+		return (b - a + 1) / 2 * (a + b);
 	}
-	var sum = 0, i = a.length;
-	while (i--) {
+	var sum = 0, i;
+	for (i=0; i<a.length; i+=1) {
 		sum += a[i];
 	}
 	return sum;
 };
 Calc.product = function(list) {
-	var prod = list[0],
-		i = list.length;
-	while (--i) {
+	var prod = list[0], i;
+	for (i=0; i<list.length; i+=1) {
 		prod *= list[i];
 	}
 	return prod;
@@ -234,9 +269,8 @@ Calc.modes = function(list) {
 	var map = [],
 		modes = [],
 		maxCount = 1,
-		i = list.length,
-		item;
-	while (i--) {
+		item, i;
+	for (i=0; i<list.length; i+=1) {
 		item = list[i];
 		if (map[item] === undefined) {
 			map[item] = 1;
@@ -260,9 +294,8 @@ Calc.variance = function(list, pop) {
 	var n = list.length,
 		mean = Calc.mean(list),
 		top = 0,
-		inside, i = n;
-	list = Calc.sort(list);
-	while (i--) {
+		inside, i;
+	for (i=0; i<list.length; i+=1) {
 		top += pow(list[i]-mean, 2);
 	}
 	if (pop) {
@@ -312,14 +345,14 @@ Calc.hypot = function(a, b) {
 /*** Combinatorics ***/
 
 Calc.factorial = function(num) {
-	var factorial = num;
+	var factorial = num, i;
 	if (num === 0) {
 		factorial = 1;
 	} else if (num < 0) {
 		factorial = null; 
 	} else if (num % 1 === 0) {
-		while (--num) {
-			factorial *= num;
+		for (i=1; i<num; i+=1) {
+			factorial *= i;
 		}
 	}
 	return factorial;
@@ -351,7 +384,7 @@ Calc.radians = function(angle) {
 		return '0';
 	}
 	// Remove "1" from denominator
-	if (parts[1] === '1') {
+	if (!parts[1] || parts[1] === '1') {
 		parts[1] = '';
 	} else {
 		parts[1] = '/' + parts[1];
@@ -414,30 +447,28 @@ Calc.factors = function(list) {
 	} else {
 		list = list.slice(0);
 	}
-	var matching, max,
-		factors = [1], f,
-		n = list.length;
+	var matching, min,
+		factors = [1],
+		f, i;
 	
 	// Deal with positive numbers only
-	while (n--) {
-		list[n] = abs(list[n]);
+	for (i=0; i<list.length; i+=1) {
+		list[i] = abs(list[i]);
 		// Eliminate zeroes
-		if (!list[n]) {list.splice(n, 1);}
+		if (!list[i]) {list.splice(i, 1);}
 	}
 	
-	n = list.length;
 	min = Calc.min(list);
 		
 	// Loop through all possible factors
 	for (f=2; f<=min; f+=1) {
 		matching = 0;
-		while (n--) {
+		for (i=0; i<list.length; i++) {
 			// If number is a factor
-			if (list[n] % f === 0) {
+			if (list[i] % f === 0) {
 				matching += 1;
 			}
 		}
-		n = list.length;
 		// If number is a common factor
 		if (matching === list.length) {
 			factors.push(f);
@@ -470,26 +501,25 @@ Calc.lcm = function(list) {
 	} else {
 		list = list.slice(0);
 	}
-	var prod = 1,
-		n = list.length,
+	var prod = 1, min,
+		i = list.length,
 		lcm, matching, m;
 	// Make all numbers positive
-	while (n--) {
-		list[n] = abs(list[n]);
-		prod *= list[n];
+	for (i=0; i<list.length; i+=1) {
+		list[i] = abs(list[i]);
+		prod *= list[i];
 	}
-	n = list.length;
 	min = Calc.min(list);
 	// Loop through all possible multiples
 	for (m=min; m<=prod; m+=1) {
 		matching = 0;
-		while (n--) {
+		for (i=0; i<list.length; i+=1) {
 			// If number is multiple
-			if (m % list[n] === 0) {
+			if (m % list[i] === 0) {
 				matching += 1;
 			}
 		}
-		n = list.length;
+		// If multiple is a multiple of all given numbers
 		if (matching === list.length) {
 			lcm = m;
 			break;
@@ -523,7 +553,7 @@ Calc.frac = function(num) {
 	}
 
 	while (dec !== num) {
-		if (i < 1000) {
+		if (i < 100000) {
 			if (dec < num) {
 				top += 1;
 			} else {
@@ -654,8 +684,73 @@ Calc.isFib = function(num) {
 	return ans;
 };
 
+// Fix binary rounding error
+Calc.correct = function(num) {
+	if (String(num).indexOf('e') === -1 && Calc.round(num, 14) === Calc.round(num, 13)) {
+		num = Calc.round(num, 14);
+	}
+	return num;
+};
+
+/* Random Module */
+
+// Get random number or list index
+Calc.random = function(a, b) {
+	if (a === undefined && b === undefined) {
+		a = 0;
+		b = 1;
+	} else if (a === undefined) {
+		a = 0;
+	}
+	if (a.splice) {
+		return floor(a.length * random());
+	} else if (b === undefined) {
+		b = a;
+		a = 0;
+	}
+	return a + (b - a) * random();
+};
+// Scramble a list of numbers
+Calc.scramble = function(list) {
+	var n = list.length,
+		item, i;
+	list = list.slice(0);
+	for (i=0; i<n; i+=1) {
+		item = list[i];
+		list.splice(i, 1);
+		list.splice(Calc.random(list), 0, item);
+	}
+	return list;
+};
+// Get a random selection from a list
+Calc.choices = function(list, n) {
+	return Calc.scramble(list).slice(0, n || 1);
+};
+// Get a random number from a list
+Calc.choice = function(list, n) {
+	return Calc.scramble(list)[0];
+};
+
+/* Base module */
+
+Calc.dec = function(num, base) {
+	return parseInt(num, base);
+};
+Calc.hex = function(num, base) {
+	num = parseInt(num, base);
+	return num.toString(16);
+};
+Calc.oct = function(num, base) {
+	num = parseInt(num, base);
+	return num.toString(8);
+};
+Calc.bin = function(num, base) {
+	num = parseInt(num, base);
+	return num.toString(2);
+};
+
 // Make all methods chainable
 makeChainable();
 
 window.Calc = Calc;
-}(window, Math, parseFloat, String, Object, Array));
+}(window, Math, parseFloat, parseInt, String, Object, Array));
