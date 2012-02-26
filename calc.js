@@ -1,5 +1,5 @@
 /*!
-Calc v1.1b
+Calc v1.1
 Caleb Evans
 Licensed under the MIT license
 */
@@ -15,7 +15,8 @@ function Calc(input) {
 	} else if (input.constructor === Calc) {
 		return input;
 	}
-	obj[0] = input;
+	obj.value = input;
+	obj.original = input;
 	return this;
 }
 
@@ -32,11 +33,14 @@ var _Calc = window.Calc,
 	toRad = 1,
 	radic = '\u221a';
 	
-// Calc properties
+// Calc constants
 Calc.PI = Math.PI;
 Calc.E = Math.E;
-Calc.PHI = 1.618033988749895;
+Calc.PHI = (1 + pow(5, 0.5)) / 2;
+Calc.G = 6.67e-11;
+
 Calc.fn = Calc.prototype;
+Calc.version = '1.1';
 
 // Convert regular methods for the Calc function
 function constructFn(name) {
@@ -45,7 +49,7 @@ function constructFn(name) {
 		// Map "this" with method's first argument
 		Calc.fn[name] = function() {
 			var args = Array.prototype.slice.call(arguments, 0);
-			this[0] = fn.apply(this, [this[0]].concat(args));
+			this.value = fn.apply(this, [this.value].concat(args));
 			return this;
 		};
 	}
@@ -67,22 +71,17 @@ function makeChainable(name) {
 	}
 }
 
-// Revert to original input
-Calc.fn.end = function() {
-	this[0] = this.original;
-	return this;
-};
-
-// Return the current result
-Calc.fn.get = function(index) {
-	return this[index];
-};
-
 // Extend Calc
-Calc.Extend = function(name, fn) {
+Calc.extend = function(name, fn) {
 	Calc[name] = fn;
 	makeChainable(name);
 	return fn;
+};
+
+// Revert to original input
+Calc.fn.end = function() {
+	this.value = this.original;
+	return this;
 };
 
 // Prevent naming conflicts
@@ -95,27 +94,27 @@ Calc.noConflict = function() {
 
 // Convert degrees to radians
 Calc.useDegrees = function(value) {
-	if (value) {
+	if (value || value === undefined) {
 		toRad = Math.PI / 180;
-	} else if (value !== undefined) {
+	} else {
 		toRad = 1;
 	}
-	return (toRad === 1) ? false : true;
+	return Calc;
 };
 
-/*** General operations ***/
+// useDegrees() method for chaining
+Calc.fn.useDegrees = function(value) {
+	Calc.useDegrees(value);
+	return this;
+};
+
+/*** Number module ***/
 
 Calc.abs = abs;
 Calc.ceil = ceil;
 Calc.floor = floor;
 Calc.round = function(num, places) {
-	var rounded;
-	if (places !== undefined) {
-		rounded = parseFloat(num.toFixed(places));
-	} else {
-		rounded = round(num);
-	}
-	return rounded;
+	return places ? parseFloat(num.toFixed(places)) : round(num);
 };
 
 // Round to nearest n
@@ -142,7 +141,15 @@ Calc.sign = function(num) {
 	return sign;
 };
 
-/*** Exponents ***/
+// Fix binary rounding error
+Calc.correct = function(num) {
+	if (String(num).indexOf('e') === -1 && Calc.round(num, 14) === Calc.round(num, 13)) {
+		num = Calc.round(num, 14);
+	}
+	return num;
+};
+
+/*** Exponent module ***/
 
 Calc.pow = function(base, exp) {
 	if (exp === undefined) {exp = 2;}
@@ -157,7 +164,7 @@ Calc.log = function(num, base) {
 	return log(num) / log(base);
 };
 Calc.ln = log;
-Calc.Exp = exp;
+Calc.exp = exp;
 
 // Solve quadratic equation
 Calc.quad = function(a, b, c) {
@@ -172,11 +179,13 @@ Calc.quad = function(a, b, c) {
 	// If only one answer
 	} else if (discr === 0) {
 		ans = (-b + pow(discr, 0.5)) / (2*a);
+	} else {
+		ans = null;
 	}
 	return ans;
 };
 
-/*** Statistics ***/
+/*** Statistic module ***/
 
 Calc.sort = function(list, fn) {
 	list = list.slice(0);
@@ -201,6 +210,7 @@ Calc.max = function(list) {
 Calc.range = function(list) {
 	return Calc.max(list) - Calc.min(list);
 };
+// Generate a list of numbers through a certain range
 Calc.thru = function(start, end, step) {
 	var arr = [], i;
 	// If no starting number is specified
@@ -212,7 +222,7 @@ Calc.thru = function(start, end, step) {
 	if (!step) {step = 1;}
 	// If step is positive
 	if (start < end) {
-		for (i=start; i<end; i+=step) {
+		for (i=start; i<end+1; i+=step) {
 			arr.push(i);
 		}
 	// If step is negative
@@ -223,23 +233,15 @@ Calc.thru = function(start, end, step) {
 	}
 	return arr;
 };
-Calc.sum = function(a, b) {
-	// If b exists, use summation
-	if (a.toFixed) {
-		if (b === undefined) {
-			b = a;
-			a = 1;
-		}
-		return (b - a + 1) / 2 * (a + b);
-	}
+Calc.sum = function(list) {
 	var sum = 0, i;
-	for (i=0; i<a.length; i+=1) {
-		sum += a[i];
+	for (i=0; i<list.length; i+=1) {
+		sum += list[i];
 	}
 	return sum;
 };
 Calc.product = function(list) {
-	var prod = list[0], i;
+	var prod = 1, i;
 	for (i=0; i<list.length; i+=1) {
 		prod *= list[i];
 	}
@@ -298,6 +300,7 @@ Calc.variance = function(list, pop) {
 	for (i=0; i<list.length; i+=1) {
 		top += pow(list[i]-mean, 2);
 	}
+	// If population is chosen
 	if (pop) {
 		inside = top / n;
 	} else {
@@ -309,7 +312,7 @@ Calc.stdDev = function(list, pop) {
 	return pow(Calc.variance(list, pop), 0.5);
 };
 
-/*** Geometry ***/
+/*** Geometry module ***/
 
 Calc.slope = function(pt1, pt2) {
 	var slope = (pt2[1] - pt1[1]) / (pt2[0] - pt1[0]);
@@ -318,31 +321,20 @@ Calc.slope = function(pt1, pt2) {
 };
 Calc.dist = function(pt1, pt2) {
 	return pow(
-		pow(pt2[0]-pt1[0], 2) + pow(pt2[1]-pt1[1], 2),
+		pow(pt2[0] - pt1[0], 2) + pow(pt2[1]- pt1[1], 2),
 	0.5);
 };
 Calc.midpt = function(pt1, pt2) {
 	return [
-		(pt1[0]+pt2[0]) / 2,
-		(pt1[1]+pt2[1]) / 2
+		(pt1[0] + pt2[0]) / 2,
+		(pt1[1] + pt2[1]) / 2
 	];
-};
-Calc.pythag = function(sides) {
-	var missing;
-	if (sides.c === undefined) {
-		missing = pow(pow(sides.a, 2) + pow(sides.b, 2), 0.5);
-	} else if (sides.b === undefined) {
-		missing = pow(pow(sides.c, 2) - pow(sides.a, 2), 0.5);
-	} else if (sides.a === undefined) {
-		missing = pow(pow(sides.c, 2) - pow(sides.b, 2), 0.5);
-	}
-	return missing;
 };
 Calc.hypot = function(a, b) {
 	return pow(pow(a, 2) + pow(b, 2), 0.5);
 };
 
-/*** Combinatorics ***/
+/*** Combinatorics module ***/
 
 Calc.factorial = function(num) {
 	var factorial = num, i;
@@ -366,7 +358,7 @@ Calc.nCr = function(n, r) {
 	return Calc.factorial(n) / (Calc.factorial(n - r) * Calc.factorial(r));
 };
 
-/*** Trigonometry ***/
+/*** Trigonometry module ***/
 
 // Convert angle to radian notation
 Calc.radians = function(angle) {
@@ -413,6 +405,9 @@ Calc.acos = function(num) {
 Calc.atan = function(num) {
 	return Math.atan(num) / toRad;
 };
+Calc.atan2 = function(num1, num2) {
+	return Math.atan2(num1, num2) / toRad;
+};
 
 // Hyperbolic functions
 Calc.sinh = function(angle) {
@@ -437,12 +432,12 @@ Calc.atanh = function(num) {
 	return log((1 + num) / (1 - num)) / 2 / toRad;
 };
 
-/*** Factors ***/
+/*** Factor module ***/
 
 // Get factors
 Calc.factors = function(list) {
 	// Create and clone list
-	if (!list || !list.slice) {
+	if (!list || !list.splice) {
 		list = [list];
 	} else {
 		list = list.slice(0);
@@ -482,36 +477,17 @@ Calc.gcf = function(list) {
 	return factors[factors.length-1];
 };
 
-// Get factors pairs of number
-Calc.factorPairs = function(num) {
-	var factors = Calc.factors(num),
-		pairs = [], factor, f;
-	for (f=0; f<factors.length; f+=1) {
-		factor = factors[f];
-		pairs.push([factor, num/factor], [-factor, -num/factor]);
-	}
-	return pairs;
-};
-
 // Get least common multiple
 Calc.lcm = function(list) {
+	var prod, lcm, matching, m, i;
+	prod = 1;
+	m = 1;
+
 	// Create and clone list
-	if (!list.slice) {
-		list = [list];
-	} else {
-		list = list.slice(0);
-	}
-	var prod = 1, min,
-		i = list.length,
-		lcm, matching, m;
-	// Make all numbers positive
-	for (i=0; i<list.length; i+=1) {
-		list[i] = abs(list[i]);
-		prod *= list[i];
-	}
-	min = Calc.min(list);
+	list = list.slice(0);
+
 	// Loop through all possible multiples
-	for (m=min; m<=prod; m+=1) {
+	while (true) {
 		matching = 0;
 		for (i=0; i<list.length; i+=1) {
 			// If number is multiple
@@ -524,20 +500,26 @@ Calc.lcm = function(list) {
 			lcm = m;
 			break;
 		}
+		m += 1;
 	}	
 	return lcm;
 };
 
 // Get Fibonacci numbers through index n
-Calc.fib = function(index) {
-	var seq = [0, 1], i;
-	for (i=2; i<=index; i+=1) {
-		seq.push(seq[i-1] + seq[i-2]);
+Calc.fib = function(n) {
+	var seq = [0, 1],
+		last, total = 1, i;
+	if (n === 0) {return 0;}
+	// Loop through sequence
+	for (i=0; i<n-1; i+=1) {
+		last = seq[1];
+		total = seq[0] + last;
+		seq = [last, total];
 	}
-	return seq[index];
+	return total;
 };
 
-/*** Conversions ***/
+/*** Representation module ***/
 
 // Convert to fraction
 Calc.frac = function(num) {
@@ -546,6 +528,9 @@ Calc.frac = function(num) {
 		bot = 1,
 		i = 0,
 		negative;
+	
+	num = Calc.correct(num);
+	
 	// If number is negative
 	if (num < 0) {
 		num = abs(num);
@@ -578,36 +563,43 @@ Calc.frac = function(num) {
 
 // Simplify radical
 Calc.radical = function(num) {
-
-	var route, imaginary, i,
-		factor, parts = [], ans;
+	var root, imaginary, i,
+		factor, ans;
 
 	// If number is imaginary
 	if (num < 0) {
 		imaginary = true;
 		num = abs(num);
 	}
-	route = pow(num, 0.5);
-	ans = radic + num;
+	root = pow(num, 0.5);
+	
+	// If answer is not an integer
+	if (num % 1 !== 0) {
+		ans = '(' + Calc.frac(num) + ')';
+	} else {
+		ans = num;
+	}
+	ans = radic + ans;
 
 	// If perfect square
-	if (route % 1 === 0) {
-		ans = String(route);
+	if (root % 1 === 0) {
+		ans = String(root);
 	} else {
 		// Find factors of number
 		for (i=2; i<num; i+=1) {
 			// If number is factor
 			factor = num/i;
 			if (factor % 1 === 0) {
-				route = pow(factor, 0.5);
+				root = pow(factor, 0.5);
 				// If factor is perfect square
-				if (route % 1 === 0) {
-					ans = [route, num/factor].join(radic);
+				if (root % 1 === 0) {
+					ans = [root, num/factor].join(radic);
 					break;
 				}
 			}
 		}
 	}
+	
 	// If imaginary
 	if (imaginary) {
 		if (ans.indexOf(radic) !== -1) {
@@ -643,7 +635,7 @@ Calc.num = function(num) {
 	return parseFloat(num);
 };
 
-/*** Conditions ***/
+/*** Condition module ***/
 
 Calc.isEven = function(num) {
 	return (num % 2 === 0);
@@ -655,9 +647,8 @@ Calc.isInteger = function(num) {
 	return (num % 1 === 0);
 };
 Calc.isPrime = function(num) {
-	num = abs(num);
 	var factors = Calc.factors(num);
-	return (factors[1] === num);
+	return (factors[1] === abs(num));
 };
 Calc.isComposite = function(num) {
 	num = abs(num);
@@ -669,27 +660,19 @@ Calc.isFactor = function(factor, num) {
 // If number is in Fibonacci sequence
 Calc.isFib = function(num) {
 	var seq = [0, 1],
-		ans = false, i;
-	if (num === 0 || num === 1) {
-		ans = true;
-	} else {
-		for (i=2; i<=num+1; i+=1) {
-			seq.push(seq[i-1] + seq[i-2]);
-			if (seq[seq.length-1] === num) {
-				ans = true;
-				break;
-			}
+		last, total, ans = false, i;
+	if (num === 0 || num === 1) {ans = true;}
+	// Loop through sequence
+	for (i=0; i<num-1; i+=1) {
+		last = seq[1];
+		total = seq[0] + last;
+		seq = [last, total];
+		if (seq[1] === num) {
+			ans = true;
+			break;
 		}
 	}
 	return ans;
-};
-
-// Fix binary rounding error
-Calc.correct = function(num) {
-	if (String(num).indexOf('e') === -1 && Calc.round(num, 14) === Calc.round(num, 13)) {
-		num = Calc.round(num, 14);
-	}
-	return num;
 };
 
 /* Random Module */
@@ -712,10 +695,9 @@ Calc.random = function(a, b) {
 };
 // Scramble a list of numbers
 Calc.scramble = function(list) {
-	var n = list.length,
-		item, i;
+	var item, i;
 	list = list.slice(0);
-	for (i=0; i<n; i+=1) {
+	for (i=0; i<list.length; i+=1) {
 		item = list[i];
 		list.splice(i, 1);
 		list.splice(Calc.random(list), 0, item);
@@ -736,17 +718,17 @@ Calc.choice = function(list, n) {
 Calc.dec = function(num, base) {
 	return parseInt(num, base);
 };
-Calc.hex = function(num, base) {
+Calc.bin = function(num, base) {
 	num = parseInt(num, base);
-	return num.toString(16);
+	return num.toString(2);
 };
 Calc.oct = function(num, base) {
 	num = parseInt(num, base);
 	return num.toString(8);
 };
-Calc.bin = function(num, base) {
+Calc.hex = function(num, base) {
 	num = parseInt(num, base);
-	return num.toString(2);
+	return num.toString(16);
 };
 
 // Make all methods chainable
