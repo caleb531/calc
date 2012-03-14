@@ -1,5 +1,5 @@
 /*!
-Calc v1.1
+Calc v1.2b
 Caleb Evans
 Licensed under the MIT license
 */
@@ -40,7 +40,7 @@ Calc.PHI = (1 + pow(5, 0.5)) / 2;
 Calc.G = 6.67e-11;
 
 Calc.fn = Calc.prototype;
-Calc.version = '1.1';
+Calc.version = '1.2b';
 
 // Convert regular methods for the Calc function
 function constructFn(name) {
@@ -277,7 +277,7 @@ Calc.modes = function(list) {
 		if (map[item] === undefined) {
 			map[item] = 1;
 		} else {
-			map[item]++;  
+			map[item] += 1;
 		}
 		if (map[item] > maxCount) {
 			modes = [item];
@@ -341,7 +341,7 @@ Calc.factorial = function(num) {
 	if (num === 0) {
 		factorial = 1;
 	} else if (num < 0) {
-		factorial = null; 
+		factorial = null;
 	} else if (num % 1 === 0) {
 		for (i=1; i<num; i+=1) {
 			factorial *= i;
@@ -458,7 +458,7 @@ Calc.factors = function(list) {
 	// Loop through all possible factors
 	for (f=2; f<=min; f+=1) {
 		matching = 0;
-		for (i=0; i<list.length; i++) {
+		for (i=0; i<list.length; i+=1) {
 			// If number is a factor
 			if (list[i] % f === 0) {
 				matching += 1;
@@ -501,7 +501,7 @@ Calc.lcm = function(list) {
 			break;
 		}
 		m += 1;
-	}	
+	}
 	return lcm;
 };
 
@@ -730,6 +730,213 @@ Calc.hex = function(num, base) {
 	num = parseInt(num, base);
 	return num.toString(16);
 };
+
+/* Matrix module */
+(function(Calc) {
+
+	// Matrix consttructor
+	function Matrix(m) {
+		if (m.constructor === Matrix) {
+			return m;
+		}
+		this.matrix = m;
+		return this;
+	}
+	Calc.matrix = function(m) {
+		return new Matrix(m);
+	};
+	var matrix = Matrix.prototype;
+
+	// Get row/column from index
+	function _row(m, r) {
+		return m[r];
+	}
+	function _col(m, c) {
+		var arr = [], r;
+		for (r=0; r<m.length; r+=1) {
+			arr.push(m[r][c]);
+		}
+		return arr;
+	}
+	// Get number of rows/columns
+	function _nrows(m) {
+		return m.length;
+	}
+	function _ncols(m) {
+		if (m.length === 0) {return 0;}
+		return m[0].length;
+	}
+	
+	// Cross out row/column in matrix (internal)
+	function _crossout(m, p) {
+		var n, r, c;
+		m = m.slice(0);
+		m.splice(p[0], 1);
+		for (r=0; r<m.length; r+=1) {
+			m[r] = m[r].slice(0);
+			for (c=0; c<m[r].length; c+=1) {
+				if (c === p[1]) {
+					m[r].splice(c, 1);
+					continue;
+				}
+			}
+		}
+		return m;
+	}
+	
+	// Find determinant (internal)
+	function _det(m) {
+		var sign = 1,
+			top = m[0],
+			nrows = _nrows(m),
+			ncols = _ncols(m),
+			sub,
+			ans = 0, c, r;
+			for (c=0; c<ncols; c+=1) {
+				sub = _crossout(m.slice(0), [0, c]);
+				// Calculate determinant and add onto answer
+				ans += (top[c] * sign) * Calc.matrix(sub).det();
+				sign *= -1;
+			}
+		return ans;
+	}
+	
+	// Scale matrix
+	matrix.scale = function(scalar) {
+		var m = this.matrix.slice(0),
+			r, c;
+		for (r=0; r<m.length; r+=1) {
+			for (c=0; c<m[r].length; c+=1) {
+				m[r][c] *= scalar;
+			}
+		}
+		return Calc.matrix(m);
+	};
+	
+	// Add matrices
+	matrix.add = function(m2) {
+		var r, c, ans = [];
+		m1 = this.matrix;
+		m2 = Calc.matrix(m2).matrix;
+		if (m1.length !== m2.length || m1[0].length !== m2[0].length) {
+			return null;
+		}
+		for (r=0; r<m1.length; r+=1) {
+			ans[r] = [];
+			for (c=0; c<m1[r].length; c+=1) {
+				ans[r][c] = (m1[r][c] + m2[r][c]);
+			}
+		}
+		return Calc.matrix(ans);
+	};
+	
+	// Subtract matrices
+	matrix.subtract = function(m2) {
+		m2 = Calc.matrix(m2);
+		return this.add(m2.scale(-1));
+	};
+	
+	// Multiply matrices
+	matrix.multiply = function(m2) {
+		m2 = Calc.matrix(m2).matrix;
+		var m1 = this.matrix,
+			r, c, rr, n,
+			row, col,
+			rows = m1.length,
+			cols = m2[0].length,
+			ans = [];
+		// If matrices cannot be multiplied
+		if (m1[0].length !== m2.length) {return null;}
+		// Loop through resultant rows
+		for (r=0; r<rows; r+=1) {
+			ans[r] = [];
+			// Loop through resultant's columns
+			for (c=0; c<cols; c+=1) {
+				n = 0;
+				// Match up row from matrix 1 and column from matrix 2
+				row = _row(m1, r);
+				col = _col(m2, c);
+				for (rr=0; rr<row.length; rr+=1) {
+					n += (row[rr] * col[rr]);
+					if (isNaN(n)) {return null;}
+				}
+				ans[r][c] = n;
+			}
+		}
+		return Calc.matrix(ans);
+	};
+	
+	// Calculate determinant of a matrix
+	matrix.det = function() {
+		var m = this.matrix,
+			nrows = _nrows(m),
+			ncols = _ncols(m);
+		if (nrows === 1 && ncols === 1) {
+			return m[0][0];
+		} else if (nrows > 1 && ncols > 1) {
+			return _det(m);
+		} else {
+			return null;
+		}
+	};
+	
+	matrix.transpose = function() {
+		var m = this.matrix,
+			nrows = _nrows(m),
+			ncols = _ncols(m),
+			reflected = [], r, c;
+		for (c=0; c<ncols; c+=1) {
+			reflected[c] = [];
+			for (r=0; r<nrows; r+=1) {
+				reflected[c][r] = m[r][c];
+			}
+		}
+		return Calc.matrix(reflected);
+	};
+	
+	// Calculate inverse of a matrix
+	matrix.cofactors = function() {
+		var m = this.matrix,
+			nrows = _nrows(m),
+			ncols = _ncols(m),
+			factors = [],
+			det = this.det(),
+			rsign = 1, csign,
+			sub, r, c;
+		m = m.slice(0);
+		// If nrows is even, start with negative
+		if (nrows % 2 === 0) {
+			rsign = 1;
+		}
+		for (r=0; r<nrows; r+=1) {
+			csign = rsign;
+			factors[r] = [];
+			for (c=0; c<ncols; c+=1) {
+				sub = _crossout(m, [r, c]);
+				factors[r].push(Calc.matrix(sub).det() * csign);
+				csign *= -1;
+			}
+			rsign *= -1;
+		}
+		return Calc.matrix(factors);
+	};
+	
+	// Calculate inverse
+	matrix.inv = function() {
+		var m = this.matrix,
+			nrows = _nrows(m),
+			ncols = _ncols(m),
+			det = this.det(),
+			inv;
+		if (nrows === 1 && ncols === 1) {
+			inv = [[1/m[0][0]]]; 
+		} else if (nrows > 1 && ncols > 1) {
+			inv = (det ? this.cofactors().transpose().scale(1/det) : null);
+		}
+		return Calc.matrix(inv);
+	};
+
+}(Calc));
 
 // Make all methods chainable
 makeChainable();
