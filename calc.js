@@ -3,7 +3,7 @@ Calc v1.2b
 Caleb Evans
 Licensed under the MIT license
 */
-(function(window, Math, parseFloat, parseInt, String, Object, Array, undefined) {
+(function(window, Math, parseFloat, parseInt, String, Object, Array, TRUE, FALSE, NULL, UNDEFINED) {
 
 // Calc function
 function Calc(input) {
@@ -19,6 +19,7 @@ function Calc(input) {
 	obj.original = input;
 	return this;
 }
+window.Calc = Calc;
 
 // Set variables (used as aliases)
 var _Calc = window.Calc,
@@ -40,6 +41,7 @@ Calc.PHI = (1 + pow(5, 0.5)) / 2;
 Calc.G = 6.67e-11;
 
 Calc.fn = Calc.prototype;
+Calc.inDegrees = FALSE;
 Calc.version = '1.2b';
 
 // Convert regular methods for the Calc function
@@ -48,9 +50,10 @@ function constructFn(name) {
 	if (fn.call && !Calc.fn[name]) {
 		// Map "this" with method's first argument
 		Calc.fn[name] = function() {
-			var args = Array.prototype.slice.call(arguments, 0);
-			this.value = fn.apply(this, [this.value].concat(args));
-			return this;
+			var inst = this,
+				args = ([]).slice.call(arguments, 0);
+			inst.value = fn.apply(inst, [inst.value].concat(args));
+			return inst;
 		};
 	}
 }
@@ -58,11 +61,11 @@ function constructFn(name) {
 // Make all methods chainable
 function makeChainable(name) {
 	var p;
-	// Apply to only a single method if specified
-	if (name !== undefined) {
+	if (name !== UNDEFINED) {
+		// Apply to only a single method
 		return constructFn(name);
-	// Else, apply to all methods
 	} else {
+		// Apply to all methods
 		for (p in Calc) {
 			if (Calc.hasOwnProperty(p)) {
 				constructFn(p);
@@ -94,10 +97,12 @@ Calc.noConflict = function() {
 
 // Convert degrees to radians
 Calc.useDegrees = function(value) {
-	if (value || value === undefined) {
+	if (value || value === UNDEFINED) {
 		toRad = Math.PI / 180;
+		Calc.inDegrees = TRUE;
 	} else {
 		toRad = 1;
+		Calc.inDegrees = FALSE;
 	}
 	return Calc;
 };
@@ -152,24 +157,24 @@ Calc.correct = function(num) {
 /*** Exponent module ***/
 
 Calc.pow = function(base, exp) {
-	if (exp === undefined) {exp = 2;}
+	if (exp === UNDEFINED) {exp = 2;}
 	return pow(base, exp);
 };
 Calc.root = function(base, root) {
-	if (root === undefined) {root = 2;}
+	if (root === UNDEFINED) {root = 2;}
 	return pow(base, 1/root);
 };
 Calc.log = function(num, base) {
-	if (base === undefined) {base = 10;}
+	if (base === UNDEFINED) {base = 10;}
 	return log(num) / log(base);
 };
 Calc.ln = log;
 Calc.exp = exp;
 
 // Solve quadratic equation
-Calc.quad = function(a, b, c) {
+Calc.quadratic = function(a, b, c) {
 	var discr = pow(b, 2) - (4*a*c),
-		ans = null;
+		ans = NULL;
 	// If answers are real
 	if (discr > 0) {
 		ans = [
@@ -180,7 +185,7 @@ Calc.quad = function(a, b, c) {
 	} else if (discr === 0) {
 		ans = (-b + pow(discr, 0.5)) / (2*a);
 	} else {
-		ans = null;
+		ans = NULL;
 	}
 	return ans;
 };
@@ -214,11 +219,11 @@ Calc.range = function(list) {
 Calc.thru = function(start, end, step) {
 	var arr = [], i;
 	// If no starting number is specified
-	if (end === undefined) {
+	if (end === UNDEFINED) {
 		end = start;
 		start = 0;
 	}
-	// If step is 0 or undefined
+	// If step is 0 or UNDEFINED
 	if (!step) {step = 1;}
 	// If step is positive
 	if (start < end) {
@@ -274,7 +279,7 @@ Calc.modes = function(list) {
 		item, i;
 	for (i=0; i<list.length; i+=1) {
 		item = list[i];
-		if (map[item] === undefined) {
+		if (map[item] === UNDEFINED) {
 			map[item] = 1;
 		} else {
 			map[item] += 1;
@@ -316,7 +321,7 @@ Calc.stdDev = function(list, pop) {
 
 Calc.slope = function(pt1, pt2) {
 	var slope = (pt2[1] - pt1[1]) / (pt2[0] - pt1[0]);
-	if (slope === Infinity) {slope = null;}
+	if (slope === Infinity) {slope = NULL;}
 	return slope;
 };
 Calc.dist = function(pt1, pt2) {
@@ -341,7 +346,7 @@ Calc.factorial = function(num) {
 	if (num === 0) {
 		factorial = 1;
 	} else if (num < 0) {
-		factorial = null;
+		factorial = NULL;
 	} else if (num % 1 === 0) {
 		for (i=1; i<num; i+=1) {
 			factorial *= i;
@@ -367,8 +372,8 @@ Calc.radians = function(angle) {
 	if (toRad === 1) {
 		angle /= Math.PI / 180;
 	}
-	var parts = Calc.frac(abs(angle) / 180).split('/'),
-		sign = '';
+	var parts = Calc.frac(abs(angle) / 180).split('/');
+	
 	// Remove "1" from numerator
 	if (parts[0] === '1') {
 		parts[0] = '';
@@ -432,12 +437,49 @@ Calc.atanh = function(num) {
 	return log((1 + num) / (1 - num)) / 2 / toRad;
 };
 
+
+/* Coordinate module */
+
+// Convert polar coordinates to rectangular
+Calc.rect = function(pt) {
+	var x, y;
+	x = pt[0] * Calc.cos(pt[1]);
+	y = pt[0] * Calc.sin(pt[1]);
+	return [x, y];
+};
+
+// Convert rectangular coordinates to polar
+Calc.polar = function(pt) {
+	var r, t, q, divisor = Calc.PI*2 / toRad;
+	r = Calc.hypot(pt[0], pt[1]),
+	t = Calc.atan2(pt[1], pt[0]);
+	// Find positive coterminal of angle
+	if (t < 0) {
+		t = t + (divisor * Calc.ceil(-t/divisor));
+	}
+	return [r, t];
+};
+
+// Find quadrant fron a given angle or point
+Calc.quadrant = function(angle) {
+	var quadrant, remainder;
+	// If input is a set of points
+	if (angle.push) {
+		angle = Calc.polar(angle)[1];
+	}
+	// Convert angle to radians
+	angle *= toRad;
+	remainder = angle - Math.PI*2 * Calc.floor(angle/(Math.PI*2));
+	quadrant = angle ? (Calc.ceil(remainder / (Math.PI/2)) || 1) : 1;
+	return quadrant;
+};
+
 /*** Factor module ***/
 
 // Get factors
 Calc.factors = function(list) {
 	// Create and clone list
-	if (!list || !list.splice) {
+	if (!list || !list.push) {
 		list = [list];
 	} else {
 		list = list.slice(0);
@@ -448,11 +490,14 @@ Calc.factors = function(list) {
 	
 	// Deal with positive numbers only
 	for (i=0; i<list.length; i+=1) {
-		list[i] = abs(list[i]);
-		// Eliminate zeroes
-		if (!list[i]) {list.splice(i, 1);}
+		if (list[i]) {
+			list[i] = abs(list[i]);
+		} else {
+			// Eliminate zeroes
+			list.splice(i, 1);
+			i -= 1;
+		}
 	}
-	
 	min = Calc.min(list);
 		
 	// Loop through all possible factors
@@ -487,7 +532,7 @@ Calc.lcm = function(list) {
 	list = list.slice(0);
 
 	// Loop through all possible multiples
-	while (true) {
+	while (TRUE) {
 		matching = 0;
 		for (i=0; i<list.length; i+=1) {
 			// If number is multiple
@@ -507,16 +552,13 @@ Calc.lcm = function(list) {
 
 // Get Fibonacci numbers through index n
 Calc.fib = function(n) {
-	var seq = [0, 1],
-		last, total = 1, i;
+	var seq = [0, 1], i;
 	if (n === 0) {return 0;}
 	// Loop through sequence
 	for (i=0; i<n-1; i+=1) {
-		last = seq[1];
-		total = seq[0] + last;
-		seq = [last, total];
+		seq = [seq[1], seq[0]+seq[1]];
 	}
-	return total;
+	return seq[1];
 };
 
 /*** Representation module ***/
@@ -534,7 +576,7 @@ Calc.frac = function(num) {
 	// If number is negative
 	if (num < 0) {
 		num = abs(num);
-		negative = true;
+		negative = TRUE;
 	}
 
 	while (dec !== num) {
@@ -568,7 +610,7 @@ Calc.radical = function(num) {
 
 	// If number is imaginary
 	if (num < 0) {
-		imaginary = true;
+		imaginary = TRUE;
 		num = abs(num);
 	}
 	root = pow(num, 0.5);
@@ -660,16 +702,19 @@ Calc.isFactor = function(factor, num) {
 // If number is in Fibonacci sequence
 Calc.isFib = function(num) {
 	var seq = [0, 1],
-		last, total, ans = false, i;
-	if (num === 0 || num === 1) {ans = true;}
-	// Loop through sequence
-	for (i=0; i<num-1; i+=1) {
-		last = seq[1];
-		total = seq[0] + last;
-		seq = [last, total];
-		if (seq[1] === num) {
-			ans = true;
-			break;
+		last, total, ans = FALSE, i;
+	if (num === 0 || num === 1) {
+		ans = TRUE;
+	} else {
+		// Loop through sequence
+		for (i=0; i<num-1; i+=1) {
+			last = seq[1];
+			total = seq[0] + last;
+			seq = [last, total];
+			if (seq[1] === num) {
+				ans = TRUE;
+				break;
+			}
 		}
 	}
 	return ans;
@@ -679,15 +724,15 @@ Calc.isFib = function(num) {
 
 // Get random number or list index
 Calc.random = function(a, b) {
-	if (a === undefined && b === undefined) {
+	if (a === UNDEFINED && b === UNDEFINED) {
 		a = 0;
 		b = 1;
-	} else if (a === undefined) {
+	} else if (a === UNDEFINED) {
 		a = 0;
 	}
-	if (a.splice) {
+	if (a.push) {
 		return floor(a.length * random());
-	} else if (b === undefined) {
+	} else if (b === UNDEFINED) {
 		b = a;
 		a = 0;
 	}
@@ -718,23 +763,20 @@ Calc.choice = function(list, n) {
 Calc.dec = function(num, base) {
 	return parseInt(num, base);
 };
-Calc.bin = function(num, base) {
-	num = parseInt(num, base);
+Calc.bin = function(num) {
 	return num.toString(2);
 };
-Calc.oct = function(num, base) {
-	num = parseInt(num, base);
+Calc.oct = function(num) {
 	return num.toString(8);
 };
-Calc.hex = function(num, base) {
-	num = parseInt(num, base);
+Calc.hex = function(num) {
 	return num.toString(16);
 };
 
 /* Matrix module */
 (function(Calc) {
 
-	// Matrix consttructor
+	// Matrix constructor
 	function Matrix(m) {
 		if (m.constructor === Matrix) {
 			return m;
@@ -769,7 +811,7 @@ Calc.hex = function(num, base) {
 	
 	// Cross out row/column in matrix (internal)
 	function _crossout(m, p) {
-		var n, r, c;
+		var r, c;
 		m = m.slice(0);
 		m.splice(p[0], 1);
 		for (r=0; r<m.length; r+=1) {
@@ -777,7 +819,6 @@ Calc.hex = function(num, base) {
 			for (c=0; c<m[r].length; c+=1) {
 				if (c === p[1]) {
 					m[r].splice(c, 1);
-					continue;
 				}
 			}
 		}
@@ -788,10 +829,9 @@ Calc.hex = function(num, base) {
 	function _det(m) {
 		var sign = 1,
 			top = m[0],
-			nrows = _nrows(m),
 			ncols = _ncols(m),
 			sub,
-			ans = 0, c, r;
+			ans = 0, c;
 			for (c=0; c<ncols; c+=1) {
 				sub = _crossout(m.slice(0), [0, c]);
 				// Calculate determinant and add onto answer
@@ -815,11 +855,11 @@ Calc.hex = function(num, base) {
 	
 	// Add matrices
 	matrix.add = function(m2) {
-		var r, c, ans = [];
-		m1 = this.matrix;
+		var m1 = this.matrix,
+			r, c, ans = [];
 		m2 = Calc.matrix(m2).matrix;
 		if (m1.length !== m2.length || m1[0].length !== m2[0].length) {
-			return null;
+			return NULL;
 		}
 		for (r=0; r<m1.length; r+=1) {
 			ans[r] = [];
@@ -846,7 +886,7 @@ Calc.hex = function(num, base) {
 			cols = m2[0].length,
 			ans = [];
 		// If matrices cannot be multiplied
-		if (m1[0].length !== m2.length) {return null;}
+		if (m1[0].length !== m2.length) {return NULL;}
 		// Loop through resultant rows
 		for (r=0; r<rows; r+=1) {
 			ans[r] = [];
@@ -858,7 +898,7 @@ Calc.hex = function(num, base) {
 				col = _col(m2, c);
 				for (rr=0; rr<row.length; rr+=1) {
 					n += (row[rr] * col[rr]);
-					if (isNaN(n)) {return null;}
+					if (isNaN(n)) {return NULL;}
 				}
 				ans[r][c] = n;
 			}
@@ -876,10 +916,11 @@ Calc.hex = function(num, base) {
 		} else if (nrows > 1 && ncols > 1) {
 			return _det(m);
 		} else {
-			return null;
+			return NULL;
 		}
 	};
 	
+	// Transpose (reflect) matrix
 	matrix.transpose = function() {
 		var m = this.matrix,
 			nrows = _nrows(m),
@@ -894,20 +935,16 @@ Calc.hex = function(num, base) {
 		return Calc.matrix(reflected);
 	};
 	
-	// Calculate inverse of a matrix
+	// Get cofactors of a matrix
 	matrix.cofactors = function() {
 		var m = this.matrix,
 			nrows = _nrows(m),
 			ncols = _ncols(m),
 			factors = [],
-			det = this.det(),
 			rsign = 1, csign,
 			sub, r, c;
 		m = m.slice(0);
-		// If nrows is even, start with negative
-		if (nrows % 2 === 0) {
-			rsign = 1;
-		}
+
 		for (r=0; r<nrows; r+=1) {
 			csign = rsign;
 			factors[r] = [];
@@ -921,6 +958,11 @@ Calc.hex = function(num, base) {
 		return Calc.matrix(factors);
 	};
 	
+	// Calculate adjoint matrix
+	matrix.adj = function() {
+		return this.cofactors().transpose();
+	};
+	
 	// Calculate inverse
 	matrix.inv = function() {
 		var m = this.matrix,
@@ -929,9 +971,9 @@ Calc.hex = function(num, base) {
 			det = this.det(),
 			inv;
 		if (nrows === 1 && ncols === 1) {
-			inv = [[1/m[0][0]]]; 
+			inv = [[ 1 / m[0][0] ]];
 		} else if (nrows > 1 && ncols > 1) {
-			inv = (det ? this.cofactors().transpose().scale(1/det) : null);
+			inv = (det ? this.adj().scale(1/det) : NULL);
 		}
 		return Calc.matrix(inv);
 	};
@@ -941,5 +983,4 @@ Calc.hex = function(num, base) {
 // Make all methods chainable
 makeChainable();
 
-window.Calc = Calc;
-}(window, Math, parseFloat, parseInt, String, Object, Array));
+}(window, Math, parseFloat, parseInt, String, Object, Array, true, false, null));
