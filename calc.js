@@ -3,7 +3,7 @@ Calc v1.2b
 Caleb Evans
 Licensed under the MIT license
 */
-(function(window, Math, parseFloat, parseInt, String, Object, Array, TRUE, FALSE, NULL, UNDEFINED) {
+(function(window, Math, parseFloat, parseInt, isNaN, String, Object, Array, TRUE, FALSE, NULL, UNDEFINED) {
 
 // Calc function
 function Calc(input) {
@@ -32,6 +32,7 @@ var _Calc = window.Calc,
 	log = Math.log,
 	random = Math.random,
 	toRad = 1,
+	toDeg = 180/Math.PI,
 	radic = '\u221a';
 	
 // Calc constants
@@ -99,9 +100,11 @@ Calc.noConflict = function() {
 Calc.useDegrees = function(value) {
 	if (value || value === UNDEFINED) {
 		toRad = Math.PI / 180;
+		toDeg = 1;
 		Calc.inDegrees = TRUE;
 	} else {
 		toRad = 1;
+		toDeg = 180 / Math.PI;
 		Calc.inDegrees = FALSE;
 	}
 	return Calc;
@@ -113,7 +116,7 @@ Calc.fn.useDegrees = function(value) {
 	return this;
 };
 
-/*** Number module ***/
+/* Number module */
 
 Calc.abs = abs;
 Calc.ceil = ceil;
@@ -154,7 +157,7 @@ Calc.correct = function(num) {
 	return num;
 };
 
-/*** Exponent module ***/
+/* Exponent module */
 
 Calc.pow = function(base, exp) {
 	if (exp === UNDEFINED) {exp = 2;}
@@ -190,7 +193,7 @@ Calc.quadratic = function(a, b, c) {
 	return ans;
 };
 
-/*** Statistic module ***/
+/* Statistic module */
 
 Calc.sort = function(list, fn) {
 	list = list.slice(0);
@@ -206,7 +209,6 @@ Calc.sort = function(list, fn) {
 	return list;
 };
 Calc.min = function(list) {
-	if (!list.length) {list = [0];}
 	return Math.min.apply(Math, list);
 };
 Calc.max = function(list) {
@@ -317,7 +319,7 @@ Calc.stdDev = function(list, pop) {
 	return pow(Calc.variance(list, pop), 0.5);
 };
 
-/*** Geometry module ***/
+/* Geometry module */
 
 Calc.slope = function(pt1, pt2) {
 	var slope = (pt2[1] - pt1[1]) / (pt2[0] - pt1[0]);
@@ -325,21 +327,34 @@ Calc.slope = function(pt1, pt2) {
 	return slope;
 };
 Calc.dist = function(pt1, pt2) {
+	pt1 = pt1.slice(0);
+	pt2 = pt2.slice(0);
+	// Define z-value if omitted
+	pt1[2] = pt1[2] || 0;
+	pt2[2] = pt2[2] || 0;
+	
 	return pow(
-		pow(pt2[0] - pt1[0], 2) + pow(pt2[1]- pt1[1], 2),
+		pow(pt2[0] - pt1[0], 2) + pow(pt2[1] - pt1[1], 2) + pow(pt2[2] - pt1[2], 2),
 	0.5);
 };
 Calc.midpt = function(pt1, pt2) {
+	pt1 = pt1.slice(0);
+	pt2 = pt2.slice(0);
+	// Define z-value if omitted
+	pt1[2] = pt1[2] || 0;
+	pt2[2] = pt2[2] || 0;
+	
 	return [
 		(pt1[0] + pt2[0]) / 2,
-		(pt1[1] + pt2[1]) / 2
+		(pt1[1] + pt2[1]) / 2,
+		(pt1[2] + pt2[2]) / 2
 	];
 };
 Calc.hypot = function(a, b) {
 	return pow(pow(a, 2) + pow(b, 2), 0.5);
 };
 
-/*** Combinatorics module ***/
+/* Combinatorics module */
 
 Calc.factorial = function(num) {
 	var factorial = num, i;
@@ -363,15 +378,13 @@ Calc.nCr = function(n, r) {
 	return Calc.factorial(n) / (Calc.factorial(n - r) * Calc.factorial(r));
 };
 
-/*** Trigonometry module ***/
+/* Trigonometry module */
 
 // Convert angle to radian notation
 Calc.radians = function(angle) {
 	angle = angle || 0;
+	angle *= toDeg;
 	// Convert to degrees
-	if (toRad === 1) {
-		angle /= Math.PI / 180;
-	}
 	var parts = Calc.frac(abs(angle) / 180).split('/');
 	
 	// Remove "1" from numerator
@@ -437,8 +450,13 @@ Calc.atanh = function(num) {
 	return log((1 + num) / (1 - num)) / 2 / toRad;
 };
 
-
 /* Coordinate module */
+
+// Find coterminal angle between 0 and 360
+Calc.coterminal = function(angle) {
+	angle *= toDeg;
+	return (angle - (360 * Calc.floor(angle/360)) ) / toDeg;
+};
 
 // Convert polar coordinates to rectangular
 Calc.rect = function(pt) {
@@ -450,12 +468,11 @@ Calc.rect = function(pt) {
 
 // Convert rectangular coordinates to polar
 Calc.polar = function(pt) {
-	var r, t, q, divisor = Calc.PI*2 / toRad;
-	r = Calc.hypot(pt[0], pt[1]),
-	t = Calc.atan2(pt[1], pt[0]);
+	var r = Calc.hypot(pt[0], pt[1]),
+		t = Calc.atan2(pt[1], pt[0]);
 	// Find positive coterminal of angle
 	if (t < 0) {
-		t = t + (divisor * Calc.ceil(-t/divisor));
+		t = Calc.coterminal(t);
 	}
 	return [r, t];
 };
@@ -474,7 +491,7 @@ Calc.quadrant = function(angle) {
 	return quadrant;
 };
 
-/*** Factor module ***/
+/* Factor module */
 
 // Get factors
 Calc.factors = function(list) {
@@ -525,14 +542,10 @@ Calc.gcf = function(list) {
 // Get least common multiple
 Calc.lcm = function(list) {
 	var prod, lcm, matching, m, i;
-	prod = 1;
-	m = 1;
-
-	// Create and clone list
-	list = list.slice(0);
-
-	// Loop through all possible multiples
-	while (TRUE) {
+	prod = Calc.product(list);
+	
+	// Loop throughn possible multiples
+	for (m=1; m<=prod; m+=1) {
 		matching = 0;
 		for (i=0; i<list.length; i+=1) {
 			// If number is multiple
@@ -545,15 +558,14 @@ Calc.lcm = function(list) {
 			lcm = m;
 			break;
 		}
-		m += 1;
-	}
+	} 
 	return lcm;
 };
 
 // Get Fibonacci numbers through index n
 Calc.fib = function(n) {
 	var seq = [0, 1], i;
-	if (n === 0) {return 0;}
+	if (!n) {return 0;}
 	// Loop through sequence
 	for (i=0; i<n-1; i+=1) {
 		seq = [seq[1], seq[0]+seq[1]];
@@ -561,7 +573,7 @@ Calc.fib = function(n) {
 	return seq[1];
 };
 
-/*** Representation module ***/
+/* Representation module */
 
 // Convert to fraction
 Calc.frac = function(num) {
@@ -677,7 +689,7 @@ Calc.num = function(num) {
 	return parseFloat(num);
 };
 
-/*** Condition module ***/
+/* Condition module */
 
 Calc.isEven = function(num) {
 	return (num % 2 === 0);
@@ -774,213 +786,297 @@ Calc.hex = function(num) {
 };
 
 /* Matrix module */
-(function(Calc) {
 
-	// Matrix constructor
-	function Matrix(m) {
-		if (m.constructor === Matrix) {
-			return m;
-		}
-		this.matrix = m;
-		return this;
+// Matrix constructor
+function Matrix(m1) {
+	var type = m1.constructor;
+	if (type === Matrix) {
+		return m1;
+	} else if (type === Vector) {
+		m1 = [m1.vector];
 	}
-	Calc.matrix = function(m) {
-		return new Matrix(m);
-	};
-	var matrix = Matrix.prototype;
+	this.matrix = m1;
+}
+Calc.matrix = function(m1) {
+	return new Matrix(m1);
+};
+var matrix = Matrix.prototype;
 
-	// Get row/column from index
-	function _row(m, r) {
-		return m[r];
+// Get row/column from index
+function _row(m1, r) {
+	return m1[r];
+}
+function _col(m1, c) {
+	var arr = [], r;
+	for (r=0; r<m1.length; r+=1) {
+		arr.push(m1[r][c]);
 	}
-	function _col(m, c) {
-		var arr = [], r;
-		for (r=0; r<m.length; r+=1) {
-			arr.push(m[r][c]);
-		}
-		return arr;
-	}
-	// Get number of rows/columns
-	function _nrows(m) {
-		return m.length;
-	}
-	function _ncols(m) {
-		if (m.length === 0) {return 0;}
-		return m[0].length;
-	}
-	
-	// Cross out row/column in matrix (internal)
-	function _crossout(m, p) {
-		var r, c;
-		m = m.slice(0);
-		m.splice(p[0], 1);
-		for (r=0; r<m.length; r+=1) {
-			m[r] = m[r].slice(0);
-			for (c=0; c<m[r].length; c+=1) {
-				if (c === p[1]) {
-					m[r].splice(c, 1);
-				}
+	return arr;
+}
+// Get number of rows/columns
+function _nrows(m1) {
+	return m1.length;
+}
+function _ncols(m1) {
+	if (m1.length === 0) {return 0;}
+	return m1[0].length;
+}
+
+// Cross out row/column in matrix (internal)
+function _crossout(m1, p) {
+	var r, c;
+	m1 = m1.slice(0);
+	m1.splice(p[0], 1);
+	for (r=0; r<m1.length; r+=1) {
+		m1[r] = m1[r].slice(0);
+		for (c=0; c<m1[r].length; c+=1) {
+			if (c === p[1]) {
+				m1[r].splice(c, 1);
 			}
 		}
-		return m;
 	}
-	
-	// Find determinant (internal)
-	function _det(m) {
-		var sign = 1,
-			top = m[0],
-			ncols = _ncols(m),
-			sub,
-			ans = 0, c;
-			for (c=0; c<ncols; c+=1) {
-				sub = _crossout(m.slice(0), [0, c]);
-				// Calculate determinant and add onto answer
-				ans += (top[c] * sign) * Calc.matrix(sub).det();
-				sign *= -1;
-			}
-		return ans;
-	}
-	
-	// Scale matrix
-	matrix.scale = function(scalar) {
-		var m = this.matrix.slice(0),
-			r, c;
-		for (r=0; r<m.length; r+=1) {
-			for (c=0; c<m[r].length; c+=1) {
-				m[r][c] *= scalar;
-			}
-		}
-		return Calc.matrix(m);
-	};
-	
-	// Add matrices
-	matrix.add = function(m2) {
-		var m1 = this.matrix,
-			r, c, ans = [];
-		m2 = Calc.matrix(m2).matrix;
-		if (m1.length !== m2.length || m1[0].length !== m2[0].length) {
-			return NULL;
-		}
-		for (r=0; r<m1.length; r+=1) {
-			ans[r] = [];
-			for (c=0; c<m1[r].length; c+=1) {
-				ans[r][c] = (m1[r][c] + m2[r][c]);
-			}
-		}
-		return Calc.matrix(ans);
-	};
-	
-	// Subtract matrices
-	matrix.subtract = function(m2) {
-		m2 = Calc.matrix(m2);
-		return this.add(m2.scale(-1));
-	};
-	
-	// Multiply matrices
-	matrix.multiply = function(m2) {
-		m2 = Calc.matrix(m2).matrix;
-		var m1 = this.matrix,
-			r, c, rr, n,
-			row, col,
-			rows = m1.length,
-			cols = m2[0].length,
-			ans = [];
-		// If matrices cannot be multiplied
-		if (m1[0].length !== m2.length) {return NULL;}
-		// Loop through resultant rows
-		for (r=0; r<rows; r+=1) {
-			ans[r] = [];
-			// Loop through resultant's columns
-			for (c=0; c<cols; c+=1) {
-				n = 0;
-				// Match up row from matrix 1 and column from matrix 2
-				row = _row(m1, r);
-				col = _col(m2, c);
-				for (rr=0; rr<row.length; rr+=1) {
-					n += (row[rr] * col[rr]);
-					if (isNaN(n)) {return NULL;}
-				}
-				ans[r][c] = n;
-			}
-		}
-		return Calc.matrix(ans);
-	};
-	
-	// Calculate determinant of a matrix
-	matrix.det = function() {
-		var m = this.matrix,
-			nrows = _nrows(m),
-			ncols = _ncols(m);
-		if (nrows === 1 && ncols === 1) {
-			return m[0][0];
-		} else if (nrows > 1 && ncols > 1) {
-			return _det(m);
-		} else {
-			return NULL;
-		}
-	};
-	
-	// Transpose (reflect) matrix
-	matrix.transpose = function() {
-		var m = this.matrix,
-			nrows = _nrows(m),
-			ncols = _ncols(m),
-			reflected = [], r, c;
+	return m1;
+}
+
+// Find determinant (internal)
+function _det(m1) {
+	var sign = 1,
+		top = m1[0],
+		ncols = _ncols(m1),
+		sub,
+		ans = 0, c;
 		for (c=0; c<ncols; c+=1) {
-			reflected[c] = [];
-			for (r=0; r<nrows; r+=1) {
-				reflected[c][r] = m[r][c];
-			}
+			sub = _crossout(m1.slice(0), [0, c]);
+			// Calculate determinant and add onto answer
+			ans += (top[c] * sign) * Calc.matrix(sub).det();
+			sign *= -1;
 		}
-		return Calc.matrix(reflected);
-	};
-	
-	// Get cofactors of a matrix
-	matrix.cofactors = function() {
-		var m = this.matrix,
-			nrows = _nrows(m),
-			ncols = _ncols(m),
-			factors = [],
-			rsign = 1, csign,
-			sub, r, c;
-		m = m.slice(0);
+	return ans;
+}
 
+// Scale matrix
+matrix.scale = function(scalar) {
+	var m1 = this.matrix.slice(0),
+		r, c;
+	for (r=0; r<m1.length; r+=1) {
+		for (c=0; c<m1[r].length; c+=1) {
+			m1[r][c] *= scalar;
+		}
+	}
+	return Calc.matrix(m1);
+};
+
+// Matrix traversal
+matrix.row = function(r) {
+	return _row(this.matrix, r);
+};
+matrix.col = function(c) {
+	return _col(this.matrix, c);
+};
+matrix.nrows = function() {
+	return _nrows(this.matrix);
+};
+matrix.ncols = function() {
+	return _ncols(this.matrix);
+};
+
+// Add matrices
+matrix.add = function(m2) {
+	var m1 = this.matrix,
+		r, c, ans = [];
+	m2 = Calc.matrix(m2).matrix;
+	if (m1.length !== m2.length || m1[0].length !== m2[0].length) {
+		return NULL;
+	}
+	for (r=0; r<m1.length; r+=1) {
+		ans[r] = [];
+		for (c=0; c<m1[r].length; c+=1) {
+			ans[r][c] = (m1[r][c] + m2[r][c]);
+		}
+	}
+	return Calc.matrix(ans);
+};
+
+// Subtract matrices
+matrix.subtract = function(m2) {
+	return this.add(Calc.matrix(m2).scale(-1));
+};
+
+// Multiply matrices
+matrix.multiply = function(m2) {
+	m2 = Calc.matrix(m2).matrix;
+	var m1 = this.matrix,
+		r, c, rr, n,
+		row, col,
+		rows = m1.length,
+		cols = m2[0].length,
+		ans = [];
+	// If matrices cannot be multiplied
+	if (m1[0].length !== m2.length) {
+		return NULL;
+	}
+	// Loop through resultant rows
+	for (r=0; r<rows; r+=1) {
+		ans[r] = [];
+		// Loop through resultant's columns
+		for (c=0; c<cols; c+=1) {
+			n = 0;
+			// Match up row from matrix 1 and column from matrix 2
+			row = _row(m1, r);
+			col = _col(m2, c);
+			for (rr=0; rr<row.length; rr+=1) {
+				n += (row[rr] * col[rr]);
+				if (isNaN(n)) {return NULL;}
+			}
+			ans[r][c] = n;
+		}
+	}
+	return Calc.matrix(ans);
+};
+
+// Calculate determinant of a matrix
+matrix.det = function() {
+	var m1 = this.matrix,
+		nrows = _nrows(m1),
+		ncols = _ncols(m1);
+	if (nrows === 1 && ncols === 1) {
+		return m1[0][0];
+	} else if (nrows > 1 && ncols > 1) {
+		return _det(m1);
+	} else {
+		return NULL;
+	}
+};
+
+// Transpose (reflect) matrix
+matrix.transpose = function() {
+	var m1 = this.matrix,
+		nrows = _nrows(m1),
+		ncols = _ncols(m1),
+		reflected = [], r, c;
+	for (c=0; c<ncols; c+=1) {
+		reflected[c] = [];
 		for (r=0; r<nrows; r+=1) {
-			csign = rsign;
-			factors[r] = [];
-			for (c=0; c<ncols; c+=1) {
-				sub = _crossout(m, [r, c]);
-				factors[r].push(Calc.matrix(sub).det() * csign);
-				csign *= -1;
-			}
-			rsign *= -1;
+			reflected[c][r] = m1[r][c];
 		}
-		return Calc.matrix(factors);
-	};
-	
-	// Calculate adjoint matrix
-	matrix.adj = function() {
-		return this.cofactors().transpose();
-	};
-	
-	// Calculate inverse
-	matrix.inv = function() {
-		var m = this.matrix,
-			nrows = _nrows(m),
-			ncols = _ncols(m),
-			det = this.det(),
-			inv;
-		if (nrows === 1 && ncols === 1) {
-			inv = [[ 1 / m[0][0] ]];
-		} else if (nrows > 1 && ncols > 1) {
-			inv = (det ? this.adj().scale(1/det) : NULL);
-		}
-		return Calc.matrix(inv);
-	};
+	}
+	return Calc.matrix(reflected);
+};
 
-}(Calc));
+// Get cofactors of a matrix
+matrix.cofactors = function() {
+	var m1 = this.matrix,
+		nrows = _nrows(m1),
+		ncols = _ncols(m1),
+		factors = [],
+		rsign = 1, csign,
+		sub, r, c;
+	m1 = m1.slice(0);
+
+	for (r=0; r<nrows; r+=1) {
+		csign = rsign;
+		factors[r] = [];
+		for (c=0; c<ncols; c+=1) {
+			sub = _crossout(m1, [r, c]);
+			factors[r].push(Calc.matrix(sub).det() * csign);
+			csign *= -1;
+		}
+		rsign *= -1;
+	}
+	return Calc.matrix(factors);
+};
+
+// Calculate adjoint matrix
+matrix.adj = function() {
+	return this.cofactors().transpose();
+};
+
+// Calculate inverse
+matrix.inv = function() {
+	var inst = this,
+		m1 = inst.matrix,
+		nrows = _nrows(m1),
+		ncols = _ncols(m1),
+		det = inst.det(),
+		inv;
+	if (nrows === 1 && ncols === 1) {
+		inv = [[ 1 / m1[0][0] ]];
+	} else if (nrows > 1 && ncols > 1) {
+		inv = (det ? inst.adj().scale(1/det) : NULL);
+	}
+	return Calc.matrix(inv);
+};
+
+/* Vector module */
+
+// Vector constructor
+function Vector(v1) {
+	if (v1 && v1.constructor === Vector) {
+		return v1;
+	}
+	v1 = v1 || [0, 0, 0];
+	v1 = v1.slice(0);
+	// If z-position is not given
+	v1[2] = v1[2] || 0;
+	this.vector = v1;
+}
+Calc.vector = function(v1) {
+	return new Vector(v1);
+};
+var vector = Vector.prototype;
+
+// Magnitude of vector
+vector.mag = function() {
+	var v1 = this.vector;
+	return pow(pow(v1[0], 2) + pow(v1[1], 2) + pow(v1[2], 2), 0.5);
+};
+// Angle (direction) of vector
+vector.angle = function() {
+	return Calc.polar(this.vector)[1];
+};
+// Scale a vector
+vector.scale = function(scalar) {
+	var v1 = this.vector.slice(0);
+	v1[0] *= scalar;
+	v1[1] *= scalar;
+	v1[2] *= scalar;
+	return Calc.vector(v1);
+};
+// Sum of two vectors
+vector.add = function(v2) {
+	var v1 = this.vector;
+	v2 = Calc.vector(v2).vector;
+	return Calc.vector([
+		v1[0] + v2[0],
+		v1[1] + v2[1],
+		v1[2] + v2[2]
+	]);
+};
+// Difference of two vectors
+vector.subtract = function(v2) {
+	return this.add(Calc.vector(v2).scale(-1));
+};
+// Dot product of two vectors
+vector.dot = function(v2) {
+	var v1 = this.vector;
+	v2 = Calc.vector(v2).vector;
+	return (v1[0] * v2[0]) + (v1[1] * v2[1]);
+};
+// Cross product of two 3D vectors
+vector.cross = function(v2) {
+	var v1 = this.vector;
+	v2 = Calc.vector(v2).vector;
+	if (v1[2] === 0 || v2[2] === 0) {
+		return NULL;
+	}
+	return Calc.vector([
+		(v1[1] * v2[2]) - (v1[2] * v2[1]),
+		(v1[2] * v2[0]) - (v1[0] * v2[2]),
+		(v1[0] * v2[1]) - (v1[1] * v2[0])
+	]);
+};
 
 // Make all methods chainable
 makeChainable();
 
-}(window, Math, parseFloat, parseInt, String, Object, Array, true, false, null));
+}(window, Math, parseFloat, parseInt, isNaN, String, Object, Array, true, false, null));
