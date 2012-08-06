@@ -1,15 +1,14 @@
-/*!
-Calc v1.2b
+/**@license Calc v1.2b
 Caleb Evans
 Licensed under the MIT license
-*/
-(function(window, Math, parseFloat, parseInt, isNaN, String, Object, Array, TRUE, FALSE, NULL, UNDEFINED) {
+**/
+(function(self, Math, parseFloat, parseInt, isNaN, String, Object, Array, TRUE, FALSE, NULL, UNDEFINED) {
 
 // Calc function
 function Calc(input) {
 	var obj = this;
 	// Eliminate need to call "new"
-	if (obj === window) {
+	if (obj === self) {
 		return new Calc(input);
 	// If input is already wrapped
 	} else if (input.constructor === Calc) {
@@ -17,12 +16,12 @@ function Calc(input) {
 	}
 	obj.value = input;
 	obj.original = input;
-	return this;
+	return obj;
 }
-window.Calc = Calc;
+self.Calc = Calc;
 
 // Set variables (used as aliases)
-var _Calc = window.Calc,
+var _Calc = self.Calc,
 	abs = Math.abs,
 	round = Math.round,
 	floor = Math.floor,
@@ -32,8 +31,9 @@ var _Calc = window.Calc,
 	log = Math.log,
 	random = Math.random,
 	toRad = 1,
-	toDeg = 180/Math.PI,
-	radic = '\u221a';
+	toDeg = 180 / Math.PI,
+	radic = '\u221a',
+	matrix, vector;
 	
 // Calc constants
 Calc.PI = Math.PI;
@@ -90,8 +90,8 @@ Calc.fn.end = function() {
 
 // Prevent naming conflicts
 Calc.noConflict = function() {
-	if (window.Calc === Calc) {
-		window.Calc = _Calc;
+	if (self.Calc === Calc) {
+		self.Calc = _Calc;
 	}
 	return Calc;
 };
@@ -121,7 +121,7 @@ Calc.fn.useDegrees = function(value) {
 Calc.abs = abs;
 Calc.ceil = ceil;
 Calc.floor = floor;
-Calc.round = function(num, places) {
+Calc.rounded = Calc.round = function(num, places) {
 	return places ? parseFloat(num.toFixed(places)) : round(num);
 };
 
@@ -132,7 +132,7 @@ Calc.nearest = function(num, n) {
 };
 
 // Chop off decimal (different than floor)
-Calc.chop = function(num) {
+Calc.chopped = Calc.chop = function(num) {
 	return num - (num % 1);
 };
 
@@ -195,29 +195,29 @@ Calc.quadratic = function(a, b, c) {
 
 /* Statistic module */
 
-Calc.sort = function(list, fn) {
-	list = list.slice(0);
+Calc.sorted = Calc.sort = function(arr, fn) {
+	arr = arr.slice(0);
 	if (fn && fn.call) {
-		list.sort(function(a, b) {
+		arr.sort(function(a, b) {
 			return fn(a) - fn(b);
 		});
 	} else {
-		list.sort(function(a, b) {
+		arr.sort(function(a, b) {
 			return a - b;
 		});
 	}
-	return list;
+	return arr;
 };
-Calc.min = function(list) {
-	return Math.min.apply(Math, list);
+Calc.min = function(arr) {
+	return Math.min.apply(Math, arr);
 };
-Calc.max = function(list) {
-	return Math.max.apply(Math, list);
+Calc.max = function(arr) {
+	return Math.max.apply(Math, arr);
 };
-Calc.range = function(list) {
-	return Calc.max(list) - Calc.min(list);
+Calc.range = function(arr) {
+	return Calc.max(arr) - Calc.min(arr);
 };
-// Generate a list of numbers through a certain range
+// Generate a arr of numbers through a certain range
 Calc.thru = function(start, end, step) {
 	var arr = [], i;
 	// If no starting number is specified
@@ -225,8 +225,10 @@ Calc.thru = function(start, end, step) {
 		end = start;
 		start = 0;
 	}
-	// If step is 0 or UNDEFINED
+	
+	// If step is 0 or undefined
 	if (!step) {step = 1;}
+	
 	// If step is positive
 	if (start < end) {
 		for (i=start; i<end+1; i+=step) {
@@ -240,47 +242,47 @@ Calc.thru = function(start, end, step) {
 	}
 	return arr;
 };
-Calc.sum = function(list) {
+Calc.sum = function(arr) {
 	var sum = 0, i;
-	for (i=0; i<list.length; i+=1) {
-		sum += list[i];
+	for (i=0; i<arr.length; i+=1) {
+		sum += arr[i];
 	}
 	return sum;
 };
-Calc.product = function(list) {
+Calc.product = function(arr) {
 	var prod = 1, i;
-	for (i=0; i<list.length; i+=1) {
-		prod *= list[i];
+	for (i=0; i<arr.length; i+=1) {
+		prod *= arr[i];
 	}
 	return prod;
 };
-Calc.mean = function(list) {
-	return Calc.sum(list) / list.length;
+Calc.mean = function(arr) {
+	return Calc.sum(arr) / arr.length;
 };
-Calc.geoMean = function(list) {
-	return pow(Calc.product(list), 1/list.length);
+Calc.geoMean = function(arr) {
+	return pow(Calc.product(arr), 1/arr.length);
 };
-Calc.median = function(list) {
+Calc.median = function(arr) {
 	var med, m1, m2;
-	list = Calc.sort(list);
-	// If list has no true median
-	if (list.length % 2 === 0) {
-		m1 = list[list.length/2 - 1];
-		m2 = list[list.length/2];
+	arr = Calc.sort(arr);
+	// If arr has no true median
+	if (arr.length % 2 === 0) {
+		m1 = arr[arr.length/2 - 1];
+		m2 = arr[arr.length/2];
 		med = Calc.mean([m1, m2]);
 	// But if it does...
 	} else {
-		med = list[floor(list.length/2)];
+		med = arr[floor(arr.length/2)];
 	}
 	return med;
 };
-Calc.modes = function(list) {
+Calc.modes = function(arr) {
 	var map = [],
 		modes = [],
 		maxCount = 1,
 		item, i;
-	for (i=0; i<list.length; i+=1) {
-		item = list[i];
+	for (i=0; i<arr.length; i+=1) {
+		item = arr[i];
 		if (map[item] === UNDEFINED) {
 			map[item] = 1;
 		} else {
@@ -294,18 +296,19 @@ Calc.modes = function(list) {
 			maxCount = map[item];
 		}
 	}
-	if (modes.join() === list.join()) {
+	// There are no modes if no repeating arr items are found
+	if (modes.length === arr.length) {
 		modes = [];
 	}
 	return modes;
 };
-Calc.variance = function(list, pop) {
-	var n = list.length,
-		mean = Calc.mean(list),
+Calc.variance = function(arr, pop) {
+	var n = arr.length,
+		mean = Calc.mean(arr),
 		top = 0,
 		inside, i;
-	for (i=0; i<list.length; i+=1) {
-		top += pow(list[i]-mean, 2);
+	for (i=0; i<arr.length; i+=1) {
+		top += pow(arr[i]-mean, 2);
 	}
 	// If population is chosen
 	if (pop) {
@@ -315,8 +318,8 @@ Calc.variance = function(list, pop) {
 	}
 	return inside;
 };
-Calc.stdDev = function(list, pop) {
-	return pow(Calc.variance(list, pop), 0.5);
+Calc.stdDev = function(arr, pop) {
+	return pow(Calc.variance(arr, pop), 0.5);
 };
 
 /* Geometry module */
@@ -326,7 +329,7 @@ Calc.slope = function(pt1, pt2) {
 	if (slope === Infinity) {slope = NULL;}
 	return slope;
 };
-Calc.dist = function(pt1, pt2) {
+Calc.distance = Calc.dist = function(pt1, pt2) {
 	pt1 = pt1.slice(0);
 	pt2 = pt2.slice(0);
 	// Define z-value if omitted
@@ -337,7 +340,7 @@ Calc.dist = function(pt1, pt2) {
 		pow(pt2[0] - pt1[0], 2) + pow(pt2[1] - pt1[1], 2) + pow(pt2[2] - pt1[2], 2),
 	0.5);
 };
-Calc.midpt = function(pt1, pt2) {
+Calc.midpoint = Calc.midpt = function(pt1, pt2) {
 	pt1 = pt1.slice(0);
 	pt2 = pt2.slice(0);
 	// Define z-value if omitted
@@ -352,6 +355,62 @@ Calc.midpt = function(pt1, pt2) {
 };
 Calc.hypot = function(a, b) {
 	return pow(pow(a, 2) + pow(b, 2), 0.5);
+};
+
+/* Array module */
+
+// Filter an array of items using a function
+Calc.filtered = Calc.filter = function(arr, fn) {
+	var filtered, i;
+	if (arr.filter) {
+		filtered = arr.filter(fn);
+	} else {
+		filtered = [];
+		for (i=0; i<arr.length; i+=1) {
+			if (fn.call(arr, arr[i], i, arr)) {
+				filtered.push(arr[i]);
+			}
+		}
+	}
+	return filtered;
+};
+
+// Filter an array of items using a function
+Calc.map = function(arr, fn) {
+	var mapped, i;
+	if (arr.map) {
+		mapped = arr.map(fn);
+	} else {
+		mapped = [];
+		for (i=0; i<arr.length; i+=1) {
+			mapped.push(fn.call(arr, arr[i], i, arr));
+		}
+	}
+	return mapped;
+};
+
+// Get the index of an item in an array
+Calc.index = function(arr, item) {
+	var index, i;
+	if (arr.indexOf) {
+		index = arr.indexOf(item);
+	} else {
+		index = -1;
+		for (i=0; i<arr.length; i+=1) {
+			if (arr[i] === item) {
+				index = i;
+				break;
+			}
+		}
+	}
+	return index;
+};
+
+// Remove duplicates from the given array
+Calc.unique = function(arr) {
+	return Calc.filtered(arr, function(v, k) {
+		return (Calc.index(arr, v) === k)
+	});
 };
 
 /* Combinatorics module */
@@ -376,6 +435,95 @@ Calc.nPr = function(n, r) {
 Calc.nCr = function(n, r) {
 	if (n < r || !r) {return 0;}
 	return Calc.factorial(n) / (Calc.factorial(n - r) * Calc.factorial(r));
+};
+
+Calc.loop = function(nLoops, nIterations, callback) {
+	
+	// Keep track of the iterations for each and every loop
+	var iterations = [];
+	
+	// Providing the number of iterations is optional
+	if (nIterations.call) {
+		callback = nIterations;
+		nIterations = nLoops;
+	}
+	
+	// Recursive function
+	function loop(iteration) {
+		
+		// Keep track of current iteration for each loop
+		for (var i=0; i<nIterations; i+=1) {
+			
+			// Ensure saved iteration is always up-to-date
+			iterations[iteration] = i;
+			
+			// Ensure recursion only lasts until end
+			if ((iteration + 1) < nLoops) {
+				loop(iteration + 1);
+			} else {
+				// Run callback function in deepest loop
+				callback(iterations.slice(0));
+			}
+			
+		}
+	}
+	// Only loop if number of loops is at least one
+	if (nLoops) {
+		loop(0);
+	}
+	return Calc;
+};
+
+Calc.permut = Calc.permute = function(arr, n) {
+	var iArr, perms, perm, iPerm;
+
+	// Array of calculated permutations
+	perms = [];
+	// Create array of indices from input array
+	iArr = Calc.map(arr, function(v, k) {
+		return k;
+	});	
+
+	// If n is not given, permute entire array
+	if (n === UNDEFINED) {
+		n = arr.length;
+	}
+
+	// If input is string, convert it to array
+	if (arr.split) {
+		arr = arr.split('');
+	}
+
+	// Internal permute function
+	function _permute(iPerm) {
+		var i;
+
+		// If permutation reaches the given length, use it
+		if (iPerm.length === n) {
+			
+			// Convert array of indices to array of items
+			perm = Calc.map(iPerm, function(v, k) {
+				return arr[v];
+			});
+			
+			// Add permutation to list of permutations
+			perms.push(perm);
+			
+		} else {
+			
+			// Otherwise, compute permutations by rearranging the input array
+			var items = Calc.filtered(iArr, function(v, k) {
+				return (Calc.index(iPerm, v) === -1);
+			});
+			
+			for(i=0; i<items.length; i+=1) {
+				_permute( iPerm.concat(items[i]) );
+			}
+		}
+    
+    }
+    _permute([]);
+    return perms;
 };
 
 /* Trigonometry module */
@@ -494,71 +642,71 @@ Calc.quadrant = function(angle) {
 /* Factor module */
 
 // Get factors
-Calc.factors = function(list) {
-	// Create and clone list
-	if (!list || !list.push) {
-		list = [list];
+Calc.factors = function(arr) {
+	// Create and clone arr
+	if (!arr || !arr.push) {
+		arr = [arr];
 	} else {
-		list = list.slice(0);
+		arr = arr.slice(0);
 	}
 	var matching, min,
 		factors = [1],
 		f, i;
 	
 	// Deal with positive numbers only
-	for (i=0; i<list.length; i+=1) {
-		if (list[i]) {
-			list[i] = abs(list[i]);
+	for (i=0; i<arr.length; i+=1) {
+		if (arr[i]) {
+			arr[i] = abs(arr[i]);
 		} else {
 			// Eliminate zeroes
-			list.splice(i, 1);
+			arr.splice(i, 1);
 			i -= 1;
 		}
 	}
-	min = Calc.min(list);
+	min = Calc.min(arr);
 		
 	// Loop through all possible factors
 	for (f=2; f<=min; f+=1) {
 		matching = 0;
-		for (i=0; i<list.length; i+=1) {
+		for (i=0; i<arr.length; i+=1) {
 			// If number is a factor
-			if (list[i] % f === 0) {
+			if (arr[i] % f === 0) {
 				matching += 1;
 			}
 		}
 		// If number is a common factor
-		if (matching === list.length) {
+		if (matching === arr.length) {
 			factors.push(f);
 		}
 	}
 	return factors;
 };
 // Get greatest common factor
-Calc.gcf = function(list) {
-	var factors = Calc.factors(list);
+Calc.gcf = function(arr) {
+	var factors = Calc.factors(arr);
 	return factors[factors.length-1];
 };
 
 // Get least common multiple
-Calc.lcm = function(list) {
+Calc.lcm = function(arr) {
 	var prod, lcm, matching, m, i;
-	prod = Calc.product(list);
+	prod = Calc.product(arr);
 	
 	// Loop throughn possible multiples
 	for (m=1; m<=prod; m+=1) {
 		matching = 0;
-		for (i=0; i<list.length; i+=1) {
+		for (i=0; i<arr.length; i+=1) {
 			// If number is multiple
-			if (m % list[i] === 0) {
+			if (m % arr[i] === 0) {
 				matching += 1;
 			}
 		}
 		// If multiple is a multiple of all given numbers
-		if (matching === list.length) {
+		if (matching === arr.length) {
 			lcm = m;
 			break;
 		}
-	} 
+	}
 	return lcm;
 };
 
@@ -734,14 +882,15 @@ Calc.isFib = function(num) {
 
 /* Random Module */
 
-// Get random number or list index
-Calc.random = function(a, b) {
+// Get random number or arr index
+Calc.rand = Calc.random = function(a, b) {
 	if (a === UNDEFINED && b === UNDEFINED) {
 		a = 0;
 		b = 1;
 	} else if (a === UNDEFINED) {
 		a = 0;
 	}
+	// Get random index of the given arr
 	if (a.push) {
 		return floor(a.length * random());
 	} else if (b === UNDEFINED) {
@@ -750,37 +899,51 @@ Calc.random = function(a, b) {
 	}
 	return a + (b - a) * random();
 };
-// Scramble a list of numbers
-Calc.scramble = function(list) {
+
+// Get random integer
+Calc.randInt = function(a, b) {
+	return round(Calc.rand(a, b));
+};
+
+// Scramble a arr of numbers
+Calc.scrambled = Calc.scramble = function(arr) {
 	var item, i;
-	list = list.slice(0);
-	for (i=0; i<list.length; i+=1) {
-		item = list[i];
-		list.splice(i, 1);
-		list.splice(Calc.random(list), 0, item);
+	arr = arr.slice(0);
+	for (i=0; i<arr.length; i+=1) {
+		item = arr[i];
+		arr.splice(i, 1);
+		arr.splice(Calc.random(arr), 0, item);
 	}
-	return list;
+	return arr;
 };
-// Get a random selection from a list
-Calc.choices = function(list, n) {
-	return Calc.scramble(list).slice(0, n || 1);
+// Get a random selection from a arr
+Calc.choices = function(arr, n) {
+	return Calc.scramble(arr).slice(0, n || 1);
 };
-// Get a random number from a list
-Calc.choice = function(list, n) {
-	return Calc.scramble(list)[0];
+// Get a random number from a arr
+Calc.choice = function(arr, n) {
+	return Calc.scramble(arr)[0];
 };
 
 /* Base module */
 
+// Any base
+Calc.base = function(num, base) {
+	return num.toString(base);
+};
+// Decimal
 Calc.dec = function(num, base) {
 	return parseInt(num, base);
 };
+// Binary
 Calc.bin = function(num) {
 	return num.toString(2);
 };
+// Octal
 Calc.oct = function(num) {
 	return num.toString(8);
 };
+// Hexadecimal
 Calc.hex = function(num) {
 	return num.toString(16);
 };
@@ -789,6 +952,7 @@ Calc.hex = function(num) {
 
 // Matrix constructor
 function Matrix(m1) {
+	m1 = m1 || [];
 	var type = m1.constructor;
 	if (type === Matrix) {
 		return m1;
@@ -800,7 +964,7 @@ function Matrix(m1) {
 Calc.matrix = function(m1) {
 	return new Matrix(m1);
 };
-var matrix = Matrix.prototype;
+matrix = Matrix.prototype;
 
 // Get row/column from index
 function _row(m1, r) {
@@ -1023,7 +1187,7 @@ function Vector(v1) {
 Calc.vector = function(v1) {
 	return new Vector(v1);
 };
-var vector = Vector.prototype;
+vector = Vector.prototype;
 
 // Magnitude of vector
 vector.mag = function() {
@@ -1079,4 +1243,5 @@ vector.cross = function(v2) {
 // Make all methods chainable
 makeChainable();
 
-}(window, Math, parseFloat, parseInt, isNaN, String, Object, Array, true, false, null));
+return Calc;
+}(self, Math, parseFloat, parseInt, isNaN, String, Object, Array, true, false, null));
