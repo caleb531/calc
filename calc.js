@@ -96,7 +96,7 @@ Calc.noConflict = function() {
 	return Calc;
 };
 
-// Convert degrees to radians
+// Prefer degrees instead of radians if chosen
 Calc.useDegrees = function(value) {
 	if (value || value === UNDEFINED) {
 		toRad = Math.PI / 180;
@@ -125,7 +125,7 @@ Calc.rounded = Calc.round = function(num, places) {
 	return places ? parseFloat(num.toFixed(places)) : round(num);
 };
 
-// Round to nearest n
+// Round to nearest multiple of n
 Calc.nearest = function(num, n) {
 	n = n || 1;
 	return round(num / n) * n;
@@ -193,7 +193,7 @@ Calc.quadratic = function(a, b, c) {
 	return ans;
 };
 
-/* Statistic module */
+/* Statistics module */
 
 Calc.sorted = Calc.sort = function(arr, fn) {
 	arr = arr.slice(0);
@@ -249,7 +249,10 @@ Calc.sum = function(arr) {
 	}
 	return sum;
 };
-Calc.product = function(arr) {
+Calc.summation = function(a, b) {
+	return (b - a) * (a + b) / 2 
+};
+Calc.product = Calc.prod = function(arr) {
 	var prod = 1, i;
 	for (i=0; i<arr.length; i+=1) {
 		prod *= arr[i];
@@ -265,7 +268,7 @@ Calc.geoMean = function(arr) {
 Calc.median = function(arr) {
 	var med, m1, m2;
 	arr = Calc.sort(arr);
-	// If arr has no true median
+	// If list has no true median
 	if (arr.length % 2 === 0) {
 		m1 = arr[arr.length/2 - 1];
 		m2 = arr[arr.length/2];
@@ -336,9 +339,7 @@ Calc.distance = Calc.dist = function(pt1, pt2) {
 	pt1[2] = pt1[2] || 0;
 	pt2[2] = pt2[2] || 0;
 	
-	return pow(
-		pow(pt2[0] - pt1[0], 2) + pow(pt2[1] - pt1[1], 2) + pow(pt2[2] - pt1[2], 2),
-	0.5);
+	return pow( pow(pt2[0] - pt1[0], 2) + pow(pt2[1] - pt1[1], 2) + pow(pt2[2] - pt1[2], 2), 0.5);
 };
 Calc.midpoint = Calc.midpt = function(pt1, pt2) {
 	pt1 = pt1.slice(0);
@@ -375,7 +376,7 @@ Calc.filtered = Calc.filter = function(arr, fn) {
 	return filtered;
 };
 
-// Filter an array of items using a function
+// Create a new array derived from another (determined by a function)
 Calc.map = function(arr, fn) {
 	var mapped, i;
 	if (arr.map) {
@@ -409,8 +410,21 @@ Calc.index = function(arr, item) {
 // Remove duplicates from the given array
 Calc.unique = function(arr) {
 	return Calc.filtered(arr, function(v, k) {
-		return (Calc.index(arr, v) === k)
+		return (Calc.index(arr, v) === k);
 	});
+};
+
+// Reverse the order of a list or string
+Calc.reversed = Calc.reverse = function(arr) {
+	// Convert string to array
+	if (arr.split) {
+		arr = arr.split('');
+	}
+	arr = arr.slice(0).reverse();
+	if (arr.join) {
+		arr = arr.join('');
+	}
+	return arr;
 };
 
 /* Combinatorics module */
@@ -475,14 +489,10 @@ Calc.loop = function(nLoops, nIterations, callback) {
 };
 
 Calc.permut = Calc.permute = function(arr, n) {
-	var iArr, perms, perm, iPerm;
+	var iArr, perms, perm;
 
 	// Array of calculated permutations
 	perms = [];
-	// Create array of indices from input array
-	iArr = Calc.map(arr, function(v, k) {
-		return k;
-	});	
 
 	// If n is not given, permute entire array
 	if (n === UNDEFINED) {
@@ -493,6 +503,11 @@ Calc.permut = Calc.permute = function(arr, n) {
 	if (arr.split) {
 		arr = arr.split('');
 	}
+
+	// Create array of indices from input array
+	iArr = Calc.map(arr, function(v, k) {
+		return k;
+	});
 
 	// Internal permute function
 	function _permute(iPerm) {
@@ -511,7 +526,7 @@ Calc.permut = Calc.permute = function(arr, n) {
 			
 		} else {
 			
-			// Otherwise, compute permutations by rearranging the input array
+			// Construct list of items that are not currently used
 			var items = Calc.filtered(iArr, function(v, k) {
 				return (Calc.index(iPerm, v) === -1);
 			});
@@ -600,7 +615,7 @@ Calc.atanh = function(num) {
 
 /* Coordinate module */
 
-// Find coterminal angle between 0 and 360
+// Find coterminal angle between 0 and 360 degrees
 Calc.coterminal = function(angle) {
 	angle *= toDeg;
 	return (angle - (360 * Calc.floor(angle/360)) ) / toDeg;
@@ -614,7 +629,7 @@ Calc.rect = function(pt) {
 	return [x, y];
 };
 
-// Convert rectangular coordinates to polar
+// Convert rectangular coordinates to polar coordinates
 Calc.polar = function(pt) {
 	var r = Calc.hypot(pt[0], pt[1]),
 		t = Calc.atan2(pt[1], pt[0]);
@@ -649,11 +664,11 @@ Calc.factors = function(arr) {
 	} else {
 		arr = arr.slice(0);
 	}
-	var matching, min,
+	var common, min,
 		factors = [1],
 		f, i;
 	
-	// Deal with positive numbers only
+	// Keep only positive numbers
 	for (i=0; i<arr.length; i+=1) {
 		if (arr[i]) {
 			arr[i] = abs(arr[i]);
@@ -663,21 +678,26 @@ Calc.factors = function(arr) {
 			i -= 1;
 		}
 	}
-	min = Calc.min(arr);
-		
-	// Loop through all possible factors
-	for (f=2; f<=min; f+=1) {
-		matching = 0;
-		for (i=0; i<arr.length; i+=1) {
-			// If number is a factor
-			if (arr[i] % f === 0) {
-				matching += 1;
+	
+	if (arr.length) {
+	
+		min = Calc.min(arr);
+			
+		// Loop through all possible factors
+		for (f=2; f<=min; f+=1) {
+			common = TRUE
+			for (i=0; i<arr.length; i+=1) {
+				// If number does not divide evenly, it is not a factor
+				if (arr[i] % f !== 0) {
+					common = FALSE
+				}
+			}
+			// If number is a common factor
+			if (common) {
+				factors.push(f);
 			}
 		}
-		// If number is a common factor
-		if (matching === arr.length) {
-			factors.push(f);
-		}
+	
 	}
 	return factors;
 };
@@ -689,20 +709,20 @@ Calc.gcf = function(arr) {
 
 // Get least common multiple
 Calc.lcm = function(arr) {
-	var prod, lcm, matching, m, i;
+	var prod, lcm, common, m, i;
 	prod = Calc.product(arr);
 	
 	// Loop throughn possible multiples
 	for (m=1; m<=prod; m+=1) {
-		matching = 0;
+		common = TRUE;
 		for (i=0; i<arr.length; i+=1) {
 			// If number is multiple
-			if (m % arr[i] === 0) {
-				matching += 1;
+			if (m % arr[i] !== 0) {
+				common = FALSE;
 			}
 		}
 		// If multiple is a multiple of all given numbers
-		if (matching === arr.length) {
+		if (common) {
 			lcm = m;
 			break;
 		}
@@ -712,19 +732,13 @@ Calc.lcm = function(arr) {
 
 // Get Fibonacci numbers through index n
 Calc.fib = function(n) {
-	var seq = [0, 1], i;
-	if (!n) {return 0;}
-	// Loop through sequence
-	for (i=0; i<n-1; i+=1) {
-		seq = [seq[1], seq[0]+seq[1]];
-	}
-	return seq[1];
+	return round( pow(Calc.PHI, n) / pow(5, 0.5) );
 };
 
 /* Representation module */
 
 // Convert to fraction
-Calc.frac = function(num) {
+Calc.fraction = Calc.frac = function(num) {
 	var dec = 1,
 		top = 1,
 		bot = 1,
@@ -733,108 +747,92 @@ Calc.frac = function(num) {
 	
 	num = Calc.correct(num);
 	
-	// If number is negative
-	if (num < 0) {
-		num = abs(num);
-		negative = TRUE;
-	}
-
 	while (dec !== num) {
-		if (i < 100000) {
+		if (i < 1e5) {
 			if (dec < num) {
+				// Make fraction bigger if too small
 				top += 1;
 			} else {
+				// Mae fraction smaller if too big
 				bot += 1;
 				top = floor(num * bot);
 			}
 			dec = top / bot;
 			i += 1;
 		} else {
-			return String(num);
+			return null
 		}
 	}
-	// If 0 or negative
+	// If zero or negative
 	if (top === 0) {
 		top = 0;
 		bot = 1;
-	} else if (negative) {
-		top *= -1;
 	}
-	return top + '/' + bot;
+	return [top, bot]
 };
 
-// Simplify radical
 Calc.radical = function(num) {
-	var root, imaginary, i,
-		factor, ans;
-
-	// If number is imaginary
-	if (num < 0) {
-		imaginary = TRUE;
-		num = abs(num);
-	}
-	root = pow(num, 0.5);
+	var root, ans, f, negative;
 	
-	// If answer is not an integer
-	if (num % 1 !== 0) {
-		ans = '(' + Calc.frac(num) + ')';
-	} else {
-		ans = num;
+	// Make number negative later
+	if (num < 0) {
+		num = abs(num);
+		negative = TRUE;
 	}
-	ans = radic + ans;
+		
+	// Calculate square root	
+	root = pow(num, 0.5);
+	ans = [1, num];
 
-	// If perfect square
 	if (root % 1 === 0) {
-		ans = String(root);
+		// If number is a perfect square, ski p most steps
+		ans = [root, 1];
 	} else {
-		// Find factors of number
-		for (i=2; i<num; i+=1) {
-			// If number is factor
-			factor = num/i;
+		// Loop through possible factors
+		for (f=2; f<num; f+=1) {
+			factor = num / f;
+			// If number is a true factor
 			if (factor % 1 === 0) {
 				root = pow(factor, 0.5);
-				// If factor is perfect square
+				// If factor is also a perfect square
 				if (root % 1 === 0) {
-					ans = [root, num/factor].join(radic);
+					ans = [root, num/factor];
 					break;
 				}
 			}
 		}
 	}
 	
-	// If imaginary
-	if (imaginary) {
-		if (ans.indexOf(radic) !== -1) {
-			ans = ans.replace(/\u221a/gi, 'i√');
-		} else {
-			ans += 'i';
-		}
+	// Make radical negative if necessary
+	if (negative) {
+		ans[1] *= -1;
 	}
+	
 	return ans;
 };
 
 // Convert number to comma-separated string
 Calc.commas = function(num) {
 	var parts = String(num).split('.');
-	parts[0] = parts[0]
-		.split('')
-		.reverse()
-		.join('')
-		.replace(/(\d{3})/gi, '$1,')
-		.replace(/\,$/gi, '')
-		.split('')
-		.reverse()
-		.join('');
+	// Do not convert if number is exponential
+	if (parts[0].indexOf('e') === -1) {
+		parts[0] = parts[0]
+			.split('')
+			.reverse()
+			.join('')
+			.replace(/(\d{3})/gi, '$1,')
+			.replace(/,(-?)$/gi, '$1')
+			.split('')
+			.reverse()
+			.join('');
+	}
 	return parts.join('.');
 };
 
-// Convert string to number (and remove commas)
-Calc.num = function(num) {
-	var parts = String(num)
-		.replace(/,/gi, '')
-		.split('/');
-	num = String(parts[0] / (parts[1] || 1));
-	return parseFloat(num);
+// Remove commas from a comma-separated number
+Calc.noCommas = function(str) {
+	str = str.replace(/,/gi, '')
+	return parseFloat(str);
 };
 
 /* Condition module */
@@ -850,32 +848,24 @@ Calc.isInteger = function(num) {
 };
 Calc.isPrime = function(num) {
 	var factors = Calc.factors(num);
-	return (factors[1] === abs(num));
+	return (factors.length === 2);
 };
 Calc.isComposite = function(num) {
 	num = abs(num);
-	return (num !== 0 && num !== 2 && Calc.factors(num).length > 2);
+	return (Calc.factors(num).length > 2);
 };
 Calc.isFactor = function(factor, num) {
 	return (num % factor === 0);
 };
 // If number is in Fibonacci sequence
 Calc.isFib = function(num) {
-	var seq = [0, 1],
-		last, total, ans = FALSE, i;
-	if (num === 0 || num === 1) {
+	var ans, a, b;
+	a = 5 * pow(num, 2) + 4
+	b = 5 * pow(num, 2) - 4
+	if (pow(a, 0.5) % 1 === 0 || pow(b, 0.5) % 1 === 0) {
 		ans = TRUE;
 	} else {
-		// Loop through sequence
-		for (i=0; i<num-1; i+=1) {
-			last = seq[1];
-			total = seq[0] + last;
-			seq = [last, total];
-			if (seq[1] === num) {
-				ans = TRUE;
-				break;
-			}
-		}
+		ans = FALSE;
 	}
 	return ans;
 };
@@ -887,15 +877,13 @@ Calc.rand = Calc.random = function(a, b) {
 	if (a === UNDEFINED && b === UNDEFINED) {
 		a = 0;
 		b = 1;
-	} else if (a === UNDEFINED) {
-		a = 0;
-	}
-	// Get random index of the given arr
-	if (a.push) {
-		return floor(a.length * random());
 	} else if (b === UNDEFINED) {
 		b = a;
 		a = 0;
+	}
+	// Get random index of the given arr
+	if (b.length) {
+		return floor(b.length * random());
 	}
 	return a + (b - a) * random();
 };
