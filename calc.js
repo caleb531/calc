@@ -1,4 +1,4 @@
-/**@license Calc v1.2b
+/**@license Calc v1.2
 Caleb Evans
 Licensed under the MIT license
 **/
@@ -443,49 +443,12 @@ Calc.factorial = function(num) {
 	return factorial;
 };
 Calc.nPr = function(n, r) {
-	if (n < r || !r) {return 0;}
+	if (n < r) {return 0;}
 	return Calc.factorial(n) / Calc.factorial(n - r);
 };
 Calc.nCr = function(n, r) {
-	if (n < r || !r) {return 0;}
+	if (n < r) {return 0;}
 	return Calc.factorial(n) / (Calc.factorial(n - r) * Calc.factorial(r));
-};
-
-Calc.loop = function(nLoops, nIterations, callback) {
-	
-	// Keep track of the iterations for each and every loop
-	var iterations = [];
-	
-	// Providing the number of iterations is optional
-	if (nIterations.call) {
-		callback = nIterations;
-		nIterations = nLoops;
-	}
-	
-	// Recursive function
-	function loop(iteration) {
-		
-		// Keep track of current iteration for each loop
-		for (var i=0; i<nIterations; i+=1) {
-			
-			// Ensure saved iteration is always up-to-date
-			iterations[iteration] = i;
-			
-			// Ensure recursion only lasts until end
-			if ((iteration + 1) < nLoops) {
-				loop(iteration + 1);
-			} else {
-				// Run callback function in deepest loop
-				callback(iterations.slice(0));
-			}
-			
-		}
-	}
-	// Only loop if number of loops is at least one
-	if (nLoops) {
-		loop(0);
-	}
-	return Calc;
 };
 
 Calc.permut = Calc.permute = function(arr, n) {
@@ -860,8 +823,13 @@ Calc.isFactor = function(factor, num) {
 // If number is in Fibonacci sequence
 Calc.isFib = function(num) {
 	var ans, a, b;
-	a = 5 * pow(num, 2) + 4
-	b = 5 * pow(num, 2) - 4
+	a = 5 * pow(num, 2) + 4;
+	// Accept zero as input
+	if (num > 0) {
+		b = 5 * pow(num, 2) - 4;
+	} else {
+		b = a
+	}
 	if (pow(a, 0.5) % 1 === 0 || pow(b, 0.5) % 1 === 0) {
 		ans = TRUE;
 	} else {
@@ -940,12 +908,10 @@ Calc.hex = function(num) {
 
 // Matrix constructor
 function Matrix(m1) {
-	m1 = m1 || [];
-	var type = m1.constructor;
-	if (type === Matrix) {
-		return m1;
-	} else if (type === Vector) {
-		m1 = [m1.vector];
+	if (m1 && m1.constructor === Matrix) {
+		m1 = m1.matrix.slice(0);
+	} else if (m1 === undefined) {
+		m1 = [[1]];
 	}
 	this.matrix = m1;
 }
@@ -975,14 +941,14 @@ function _ncols(m1) {
 }
 
 // Cross out row/column in matrix (internal)
-function _crossout(m1, p) {
+function _crossout(m1, pt) {
 	var r, c;
 	m1 = m1.slice(0);
-	m1.splice(p[0], 1);
+	m1.splice(pt[0], 1);
 	for (r=0; r<m1.length; r+=1) {
 		m1[r] = m1[r].slice(0);
 		for (c=0; c<m1[r].length; c+=1) {
-			if (c === p[1]) {
+			if (c === pt[1]) {
 				m1[r].splice(c, 1);
 			}
 		}
@@ -1060,20 +1026,20 @@ matrix.multiply = function(m2) {
 	var m1 = this.matrix,
 		r, c, rr, n,
 		row, col,
-		rows = m1.length,
-		cols = m2[0].length,
+		nrows = m1.length,
+		ncols = m2[0].length,
 		ans = [];
 	// If matrices cannot be multiplied
 	if (m1[0].length !== m2.length) {
 		return NULL;
 	}
 	// Loop through resultant rows
-	for (r=0; r<rows; r+=1) {
+	for (r=0; r<nrows; r+=1) {
 		ans[r] = [];
 		// Loop through resultant's columns
-		for (c=0; c<cols; c+=1) {
+		for (c=0; c<ncols; c+=1) {
 			n = 0;
-			// Match up row from matrix 1 and column from matrix 2
+			// Match up row from matrix 1 with column from matrix 2
 			row = _row(m1, r);
 			col = _col(m2, c);
 			for (rr=0; rr<row.length; rr+=1) {
@@ -1138,13 +1104,13 @@ matrix.cofactors = function() {
 	return Calc.matrix(factors);
 };
 
-// Calculate adjoint matrix
-matrix.adj = function() {
+// Calculate adjugate matrix
+matrix.adjugate = matrix.adj = function() {
 	return this.cofactors().transpose();
 };
 
 // Calculate inverse
-matrix.inv = function() {
+matrix.inverse = matrix.inv = function() {
 	var inst = this,
 		m1 = inst.matrix,
 		nrows = _nrows(m1),
@@ -1154,17 +1120,44 @@ matrix.inv = function() {
 	if (nrows === 1 && ncols === 1) {
 		inv = [[ 1 / m1[0][0] ]];
 	} else if (nrows > 1 && ncols > 1) {
-		inv = (det ? inst.adj().scale(1/det) : NULL);
+		inv = (det ? inst.adjugate().scale(1/det) : NULL);
 	}
 	return Calc.matrix(inv);
 };
+
+// Construct identity matrix from input matrix
+matrix.identity = matrix.iden = function() {
+	var inst = this,
+		m1 = inst.matrix,
+		ncols = _ncols(m1),
+		iden = [],
+		r, c,
+		d = 0,
+		value;
+		
+	for (r=0; r<ncols; r+=1) {
+		iden[r] = [];
+		for (c=0; c<ncols; c+=1) {
+			if (c == d) {
+				// If cell is on the diagonal, give it a value of one
+				value = 1;
+			} else {
+				// Otherwise, give it a value of 0
+				value = 0;
+			}
+			iden[r][c] = value;
+		}
+		d += 1;
+	}
+	return Calc.matrix(iden);
+}
 
 /* Vector module */
 
 // Vector constructor
 function Vector(v1) {
 	if (v1 && v1.constructor === Vector) {
-		return v1;
+		v1 = v1.vector;
 	}
 	v1 = v1 || [0, 0, 0];
 	v1 = v1.slice(0);
