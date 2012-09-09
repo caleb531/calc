@@ -1,4 +1,4 @@
-/**@license Calc v1.2.1
+/**@license Calc v1.2
 Caleb Evans
 Licensed under the MIT license
 **/
@@ -43,7 +43,7 @@ Calc.G = 6.67e-11;
 
 Calc.fn = Calc.prototype;
 Calc.inDegrees = FALSE;
-Calc.version = '1.2.1';
+Calc.version = '1.2b';
 
 // Convert regular methods for the Calc function
 function constructFn(name) {
@@ -121,7 +121,7 @@ Calc.fn.useDegrees = function(value) {
 Calc.abs = abs;
 Calc.ceil = ceil;
 Calc.floor = floor;
-Calc.round = Calc.rounded = function(num, places) {
+Calc.rounded = Calc.round = function(num, places) {
 	return places ? parseFloat(num.toFixed(places)) : round(num);
 };
 
@@ -132,7 +132,7 @@ Calc.nearest = function(num, n) {
 };
 
 // Chop off decimal (different than floor)
-Calc.chop = Calc.chopped = function(num) {
+Calc.chopped = Calc.chop = function(num) {
 	return num - (num % 1);
 };
 
@@ -174,9 +174,28 @@ Calc.log = function(num, base) {
 Calc.ln = log;
 Calc.exp = exp;
 
+// Solve quadratic equation
+Calc.quadratic = function(a, b, c) {
+	var discr = pow(b, 2) - (4*a*c),
+		ans = NULL;
+	// If answers are real
+	if (discr > 0) {
+		ans = [
+			(-b + pow(discr, 0.5)) / (2*a),
+			(-b - pow(discr, 0.5)) / (2*a)
+		];
+	// If only one answer
+	} else if (discr === 0) {
+		ans = (-b + pow(discr, 0.5)) / (2*a);
+	} else {
+		ans = NULL;
+	}
+	return ans;
+};
+
 /* Statistics module */
 
-Calc.sort = Calc.sorted = function(arr, fn) {
+Calc.sorted = Calc.sort = function(arr, fn) {
 	arr = arr.slice(0);
 	if (fn && fn.call) {
 		arr.sort(function(a, b) {
@@ -230,20 +249,10 @@ Calc.sum = function(arr) {
 	}
 	return sum;
 };
-Calc.summation = function(a, b, fn) {
-	var sum = 0, i;
-	if (fn !== UNDEFINED) {
-		// If function is defined, get sum of series
-		for (i=a; i<=b; i+=1) {
-			sum += fn(i);
-		}
-	} else {
-		// Otherwise, add up numbers from a through b
-		sum = (b - a) * (a + b) / 2
-	}
-	return sum;
+Calc.summation = function(a, b) {
+	return (b - a) * (a + b) / 2 
 };
-Calc.prod = Calc.product = function(arr) {
+Calc.product = Calc.prod = function(arr) {
 	var prod = 1, i;
 	for (i=0; i<arr.length; i+=1) {
 		prod *= arr[i];
@@ -323,7 +332,7 @@ Calc.slope = function(pt1, pt2) {
 	if (slope === Infinity) {slope = NULL;}
 	return slope;
 };
-Calc.dist = Calc.distance = function(pt1, pt2) {
+Calc.distance = Calc.dist = function(pt1, pt2) {
 	pt1 = pt1.slice(0);
 	pt2 = pt2.slice(0);
 	// Define z-value if omitted
@@ -332,7 +341,7 @@ Calc.dist = Calc.distance = function(pt1, pt2) {
 	
 	return pow( pow(pt2[0] - pt1[0], 2) + pow(pt2[1] - pt1[1], 2) + pow(pt2[2] - pt1[2], 2), 0.5);
 };
-Calc.midpt = Calc.midpoint = function(pt1, pt2) {
+Calc.midpoint = Calc.midpt = function(pt1, pt2) {
 	pt1 = pt1.slice(0);
 	pt2 = pt2.slice(0);
 	// Define z-value if omitted
@@ -352,7 +361,7 @@ Calc.hypot = function(a, b) {
 /* Array module */
 
 // Filter an array of items using a function
-Calc.filter = Calc.filtered = function(arr, fn) {
+Calc.filtered = Calc.filter = function(arr, fn) {
 	var filtered, i;
 	if (arr.filter) {
 		filtered = arr.filter(fn);
@@ -406,7 +415,7 @@ Calc.unique = function(arr) {
 };
 
 // Reverse the order of a list or string
-Calc.reverse = Calc.reversed = function(arr) {
+Calc.reversed = Calc.reverse = function(arr) {
 	// Convert string to array
 	if (arr.split) {
 		arr = arr.split('');
@@ -442,7 +451,7 @@ Calc.nCr = function(n, r) {
 	return Calc.factorial(n) / (Calc.factorial(n - r) * Calc.factorial(r));
 };
 
-Calc.permute = Calc.permut = function(arr, n) {
+Calc.permut = Calc.permute = function(arr, n) {
 	var iArr, perms, perm;
 
 	// Array of calculated permutations
@@ -497,34 +506,28 @@ Calc.permute = Calc.permut = function(arr, n) {
 
 /* Trigonometry module */
 
-// Convert radians to degrees d 
-Calc.degrees = function(angle) {
-	return angle * (Math.PI / 180);
-};
-
-// Convert degrees to radians
-Calc.radians = function(angle) {
-	return angle * (Math.PI / 180);
-};
-
 // Convert angle to radian notation
-Calc.radiansf = function(angle) {
+Calc.radians = function(angle) {
 	angle = angle || 0;
 	angle *= toDeg;
 	// Convert to degrees
-	var frac = Calc.fractionf(angle / 180);
+	var parts = Calc.frac(abs(angle) / 180).split('/');
 	
-	// Format fraction in terms of pi
-	frac = frac
-		// Add pi
-		.replace(/^1$/gi, 'π')
-		.replace(/\//gi, 'π/')
-		// 1*pi is just pi
-		.replace(/\b1π/gi, 'π')
-		// x/1 is just x
-		.replace(/\/1$/gi, '');
-	
-	return frac;
+	// Remove "1" from numerator
+	if (parts[0] === '1') {
+		parts[0] = '';
+	} else if (parts[0] === '0') {
+		return '0';
+	}
+	// Remove "1" from denominator
+	if (!parts[1] || parts[1] === '1') {
+		parts[1] = '';
+	} else {
+		parts[1] = '/' + parts[1];
+	}
+	// Respect negativity
+	if (angle < 0) {parts[0] = '-' + parts[0];}
+	return parts[0] + '\u03c0' + parts[1];
 };
 
 // Trig functions
@@ -698,7 +701,7 @@ Calc.fib = function(n) {
 /* Representation module */
 
 // Convert to fraction
-Calc.frac = Calc.fraction = function(num) {
+Calc.fraction = Calc.frac = function(num) {
 	var dec = 1,
 		top = 1,
 		bot = 1,
@@ -731,20 +734,6 @@ Calc.frac = Calc.fraction = function(num) {
 	return [top, bot]
 };
 
-// Return a number as a formatted simplified fraction
-Calc.fracf = Calc.fractionf = function(num) {
-	var frac = Calc.frac(num);
-	if (frac === null) {
-		frac = String(num);
-	} else {
-		frac = frac
-			.join('/')
-			.replace(/\/1$/gi, '')
-	}
-	return frac;
-};
-
-// Return the square root of a number as a simplified radical
 Calc.radical = function(num) {
 	var root, ans, f, negative;
 	
@@ -783,18 +772,6 @@ Calc.radical = function(num) {
 	}
 	
 	return ans;
-};
-
-// Return the square root of a number as a formatted simplified radical
-Calc.radicalf = function(num) {
-	return Calc.radical(num)
-		.join('√')
-		// The square root of a negative number is an imaginary number
-		.replace(/√\-/gi, 'i√')
-		// 1√x is just √x
-		.replace(/1√/gi, '√')
-		// x√1 is just x
-		.replace(/√1\b/gi, '')
 };
 
 // Convert number to comma-separated string
@@ -864,7 +841,7 @@ Calc.isFib = function(num) {
 /* Random Module */
 
 // Get random number or arr index
-Calc.random = Calc.rand = function(a, b) {
+Calc.rand = Calc.random = function(a, b) {
 	if (a === UNDEFINED && b === UNDEFINED) {
 		a = 0;
 		b = 1;
@@ -885,7 +862,7 @@ Calc.randInt = function(a, b) {
 };
 
 // Scramble a arr of numbers
-Calc.scramble = Calc.scrambled = function(arr) {
+Calc.scrambled = Calc.scramble = function(arr) {
 	var item, i;
 	arr = arr.slice(0);
 	for (i=0; i<arr.length; i+=1) {
@@ -911,15 +888,15 @@ Calc.base = function(num, base) {
 	return num.toString(base);
 };
 // Decimal
-Calc.dec = Calc.decimal = function(num, base) {
+Calc.dec = function(num, base) {
 	return parseInt(num, base);
 };
 // Binary
-Calc.bin = Calc.binary = function(num) {
+Calc.bin = function(num) {
 	return num.toString(2);
 };
 // Octal
-Calc.oct = Calc.octal = function(num) {
+Calc.oct = function(num) {
 	return num.toString(8);
 };
 // Hexadecimal
