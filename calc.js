@@ -4,8 +4,20 @@ Licensed under the MIT license
 **/
 (function(self, Math, parseFloat, parseInt, isNaN, String, Object, Array, TRUE, FALSE, NULL, UNDEFINED) {
 
-// Calc object
-var Calc = {};
+// Calc function
+function Calc(input) {
+	var obj = this;
+	// Eliminate need to call "new"
+	if (obj === window) {
+		return new Calc(input);
+	// If input is already wrapped
+	} else if (input.constructor === Calc) {
+		return input;
+	}
+	obj.original = input;
+	obj[0] = input;
+	return this;
+}
 self.Calc = Calc;
 
 // Set variables (used as aliases)
@@ -19,18 +31,65 @@ var _Calc = self.Calc,
 	exp = Math.exp,
 	log = Math.log,
 	random = Math.random,
+	PI = Math.PI,
+	E = Math.E,
 	toRad = 1,
-	toDeg = 180 / Math.PI,
+	toDeg = 180 / PI,
 	radic = '\u221a',
 	matrix, vector;
 	
 // Calc constants
-Calc.PI = Math.PI;
-Calc.E = Math.E;
+Calc.PI = PI;
+Calc.E = E;
 Calc.PHI = (1 + sqrt(5)) / 2;
-Calc.G = 6.67e-11;
+Calc.G = 6.673e-11;
 
 Calc.inDegrees = FALSE;
+
+/* Chaining module */
+
+Calc.fn = Calc.prototype;
+
+// Convert regular methods for the Calc function
+function constructFn(name) {
+	var fn = Calc[name];
+	if (fn.call) {
+		// Map "this" with method's first argument
+		Calc.fn[name] = function() {
+			var args = Array.prototype.slice.call(arguments, 0);
+			this[0] = fn.apply(this, [this[0]].concat(args));
+			return this;
+		};
+	}
+}
+
+// Enable chaining for any Calc methods
+function makeChainable(name) {
+	var p;
+	// Apply to only a single method if specified
+	if (name !== undefined) {
+		return constructFn(name);
+	// Else, apply to all methods
+	} else {
+		for (p in Calc) {
+			if (!Calc.fn[p]) {
+				constructFn(p);
+			}
+		}
+	}
+}
+// Revert to original input
+Calc.fn.end = function() {
+	this[0] = this.original;
+	return this;
+};
+
+// Extend Calc
+Calc.extend = function(name, fn) {
+	Calc[name] = fn;
+	makeChainable(name);
+	return fn;
+};
 
 // Prevent naming conflicts
 Calc.noConflict = function() {
@@ -43,12 +102,12 @@ Calc.noConflict = function() {
 // Prefer degrees instead of radians if chosen
 Calc.useDegrees = function(value) {
 	if (value || value === UNDEFINED) {
-		toRad = Math.PI / 180;
+		toRad = PI / 180;
 		toDeg = 1;
 		Calc.inDegrees = TRUE;
 	} else {
 		toRad = 1;
-		toDeg = 180 / Math.PI;
+		toDeg = 180 / PI;
 		Calc.inDegrees = FALSE;
 	}
 	return Calc;
@@ -135,7 +194,7 @@ Calc.max = function(arr) {
 Calc.range = function(arr) {
 	return Calc.max(arr) - Calc.min(arr);
 };
-// Generate a list of numbers through a certain range
+// Generate an array of numbers through a certain range
 Calc.thru = function(start, end, step) {
 	var arr = [], i;
 	// If no starting number is specified
@@ -167,7 +226,7 @@ Calc.sum = function(arr) {
 	}
 	return sum;
 };
-Calc.summation = function(a, b, fn) {
+Calc.sigma = Calc.summation = function(a, b, fn) {
 	var sum = 0, i;
 	if (fn !== UNDEFINED) {
 		// If function is defined, get sum of series
@@ -176,7 +235,7 @@ Calc.summation = function(a, b, fn) {
 		}
 	} else {
 		// Otherwise, add up numbers from a through b
-		sum = (b - a) * (a + b) / 2
+		sum = (b - a + 1) * (a + b) / 2
 	}
 	return sum;
 };
@@ -267,7 +326,7 @@ Calc.dist = Calc.distance = function(pt1, pt2) {
 	pt1[2] = pt1[2] || 0;
 	pt2[2] = pt2[2] || 0;
 	
-	return sqrt( pow(pt2[0] - pt1[0], 2) + pow(pt2[1] - pt1[1], 2) + pow(pt2[2] - pt1[2], 2));
+	return sqrt(pow(pt2[0] - pt1[0], 2) + pow(pt2[1] - pt1[1], 2) + pow(pt2[2] - pt1[2], 2));
 };
 Calc.midpt = Calc.midpoint = function(pt1, pt2) {
 	pt1 = pt1.slice(0);
@@ -335,14 +394,14 @@ Calc.index = function(arr, item) {
 	return index;
 };
 
-// Remove duplicates from the given array
+// Remove duplicates from an array
 Calc.unique = function(arr) {
 	return Calc.filtered(arr, function(v, k) {
 		return (Calc.index(arr, v) === k);
 	});
 };
 
-// Reverse the order of a list or string
+// Reverse the order of an array or string
 Calc.reverse = Calc.reversed = function(arr) {
 	// Convert string to array
 	if (arr.split) {
@@ -361,12 +420,12 @@ Calc.factorial = function(num) {
 	var factorial = num, i;
 	if (num === 0) {
 		factorial = 1;
-	} else if (num < 0) {
-		factorial = NULL;
-	} else if (num % 1 === 0) {
+	} else if (num > 0 && num % 1 === 0) {
 		for (i=1; i<num; i+=1) {
 			factorial *= i;
 		}
+	} else {
+		factorial = NULL;
 	}
 	return factorial;
 };
@@ -423,7 +482,7 @@ Calc.permute = Calc.permut = function(arr, n) {
 			});
 			
 			for(i=0; i<items.length; i+=1) {
-				_permute( iPerm.concat(items[i]) );
+				_permute(iPerm.concat(items[i]));
 			}
 		}
     
@@ -436,12 +495,12 @@ Calc.permute = Calc.permut = function(arr, n) {
 
 // Convert radians to degrees d 
 Calc.degrees = function(angle) {
-	return angle * (180 / Math.PI);
+	return angle * (180 / PI);
 };
 
 // Convert degrees to radians
 Calc.radians = function(angle) {
-	return angle * (Math.PI / 180);
+	return angle * (PI / 180);
 };
 
 // Convert angle to radian notation
@@ -500,10 +559,10 @@ Calc.tanh = function(angle) {
 	return (exp(angle) - exp(-angle)) / (exp(angle) + exp(-angle));
 };
 Calc.asinh = function(num) {
-	return log(num + sqrt((num*num + 1))) / toRad;
+	return log(num + sqrt(num*num + 1)) / toRad;
 };
 Calc.acosh = function(num) {
-	return log(num + sqrt((num*num - 1))) / toRad;
+	return log(num + sqrt(num*num - 1)) / toRad;
 };
 Calc.atanh = function(num) {
 	return log((1 + num) / (1 - num)) / 2 / toRad;
@@ -545,8 +604,8 @@ Calc.quadrant = function(angle) {
 	}
 	// Convert angle to radians
 	angle *= toRad;
-	remainder = angle - Math.PI*2 * Calc.floor(angle/(Math.PI*2));
-	quadrant = angle ? (Calc.ceil(remainder / (Math.PI/2)) || 1) : 1;
+	remainder = angle - PI*2 * Calc.floor(angle/(PI*2));
+	quadrant = angle ? (Calc.ceil(remainder / (PI/2)) || 1) : 1;
 	return quadrant;
 };
 
@@ -628,7 +687,7 @@ Calc.lcm = function(arr) {
 
 // Get Fibonacci numbers through index n
 Calc.fib = function(n) {
-	return round( pow(Calc.PHI, n) / sqrt(5) );
+	return round(pow(Calc.PHI, n) / sqrt(5));
 };
 
 /* Representation module */
@@ -892,12 +951,17 @@ Calc.nor = function(bool1, bool2) {
 
 /* Function module */
 
-// Approximate zeroes of function using a function and its derivative
+// Approximate zeroes of function using Newton's Method
 Calc.approx = function(fn, der) {
-	var x = [fn(0)], n;
+	var x = [-fn(0)], n = 1;
 	
-	for (n=0; n<100; n+=1) {
-		x.push(x[n] - (fn(x[n]) / der(x[n])))
+	if (x[0] !== 0) {
+		for (n=0; n<10e5; n+=1) {
+			x.push(x[n] - (fn(x[n]) / der(x[n])));
+			if (x[x.length-1] === x[x.length-2]) {
+				break;
+			}
+		}
 	}
 	return x[x.length-1];
 };
@@ -1062,7 +1126,7 @@ matrix.multiply = function(m2) {
 };
 
 // Calculate determinant of a matrix
-matrix.det = function() {
+matrix.det = matrix.determinant = function() {
 	var m1 = this.matrix,
 		nrows = _nrows(m1),
 		ncols = _ncols(m1);
@@ -1115,7 +1179,7 @@ matrix.cofactors = function() {
 
 // Calculate adjugate matrix
 matrix.adjugate = matrix.adj = function() {
-	return this.cofactors().transpose();
+	return this.transpose().cofactors();
 };
 
 // Calculate inverse
@@ -1229,5 +1293,8 @@ vector.cross = function(v2) {
 		(v1[0] * v2[1]) - (v1[1] * v2[0])
 	]);
 };
+
+// Enable chaining for all Calc methods
+makeChainable();
 
 }(self, Math, parseFloat, parseInt, isNaN, String, Object, Array, true, false, null));
