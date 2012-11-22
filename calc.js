@@ -11,11 +11,11 @@ function Calc(input) {
 	if (obj === window) {
 		return new Calc(input);
 	// If input is already wrapped
-	} else if (input.constructor === Calc) {
+	} else if (input && input.constructor === Calc) {
 		return input;
 	}
 	obj.original = input;
-	obj[0] = input;
+	obj.value = input;
 	return this;
 }
 self.Calc = Calc;
@@ -341,8 +341,13 @@ Calc.midpt = Calc.midpoint = function(pt1, pt2) {
 		(pt1[2] + pt2[2]) / 2
 	];
 };
+// Hypotenuse
 Calc.hypot = function(a, b) {
 	return sqrt(pow(a, 2) + pow(b, 2));
+};
+// Difference of two squares
+Calc.sqDiff = function(a, b) {
+	return pow(a, 2) - pow(b, 2);
 };
 
 /* Array module */
@@ -994,10 +999,10 @@ function _col(m1, c) {
 	return arr;
 }
 // Get number of rows/columns
-function _nrows(m1) {
+function _rows(m1) {
 	return m1.length;
 }
-function _ncols(m1) {
+function _cols(m1) {
 	if (m1.length === 0) {return 0;}
 	return m1[0].length;
 }
@@ -1022,10 +1027,10 @@ function _crossout(m1, pt) {
 function _det(m1) {
 	var sign = 1,
 		top = m1[0],
-		ncols = _ncols(m1),
+		cols = _cols(m1),
 		sub,
 		ans = 0, c;
-		for (c=0; c<ncols; c+=1) {
+		for (c=0; c<cols; c+=1) {
 			sub = _crossout(m1.slice(0), [0, c]);
 			// Calculate determinant and add onto answer
 			ans += (top[c] * sign) * Calc.matrix(sub).det();
@@ -1053,22 +1058,22 @@ matrix.row = function(r) {
 matrix.col = function(c) {
 	return _col(this.matrix, c);
 };
-matrix.nrows = function() {
-	return _nrows(this.matrix);
+matrix.nrows = matrix.rows = function() {
+	return _rows(this.matrix);
 };
-matrix.ncols = function() {
-	return _ncols(this.matrix);
+matrix.ncols = matrix.cols = function() {
+	return _cols(this.matrix);
 };
 matrix.value = function(index) {
 	var m1 = this.matrix,
-		ncols = _ncols(m1),
-		row = ceil(index / ncols) - 1,
-		col = index % ncols;
+		cols = _cols(m1),
+		row = ceil(index / cols) - 1,
+		col = index % cols;
 	return m1[row][col];
 }
 matrix.nvalues = function() {
 	var m1 = this.matrix;
-	return _nrows(m1) * _ncols(m1);
+	return _rows(m1) * _cols(m1);
 };
 
 // Add matrices
@@ -1100,18 +1105,18 @@ matrix.multiply = function(m2) {
 	var m1 = this.matrix,
 		r, c, rr, n,
 		row, col,
-		nrows = m1.length,
-		ncols = m2[0].length,
+		rows = m1.length,
+		cols = m2[0].length,
 		ans = [];
 	// If matrices cannot be multiplied
 	if (m1[0].length !== m2.length) {
 		return NULL;
 	}
 	// Loop through resultant rows
-	for (r=0; r<nrows; r+=1) {
+	for (r=0; r<rows; r+=1) {
 		ans[r] = [];
 		// Loop through resultant's columns
-		for (c=0; c<ncols; c+=1) {
+		for (c=0; c<cols; c+=1) {
 			n = 0;
 			// Match up row from matrix 1 with column from matrix 2
 			row = _row(m1, r);
@@ -1128,11 +1133,11 @@ matrix.multiply = function(m2) {
 // Calculate determinant of a matrix
 matrix.det = matrix.determinant = function() {
 	var m1 = this.matrix,
-		nrows = _nrows(m1),
-		ncols = _ncols(m1);
-	if (nrows === 1 && ncols === 1) {
+		rows = _rows(m1),
+		cols = _cols(m1);
+	if (rows === 1 && cols === 1) {
 		return m1[0][0];
-	} else if (nrows > 1 && ncols > 1) {
+	} else if (rows > 1 && cols > 1) {
 		return _det(m1);
 	} else {
 		return NULL;
@@ -1142,12 +1147,12 @@ matrix.det = matrix.determinant = function() {
 // Transpose (reflect) matrix
 matrix.transpose = matrix.reflect = function() {
 	var m1 = this.matrix,
-		nrows = _nrows(m1),
-		ncols = _ncols(m1),
+		rows = _rows(m1),
+		cols = _cols(m1),
 		reflected = [], r, c;
-	for (c=0; c<ncols; c+=1) {
+	for (c=0; c<cols; c+=1) {
 		reflected[c] = [];
-		for (r=0; r<nrows; r+=1) {
+		for (r=0; r<rows; r+=1) {
 			reflected[c][r] = m1[r][c];
 		}
 	}
@@ -1157,17 +1162,17 @@ matrix.transpose = matrix.reflect = function() {
 // Get cofactors of a matrix
 matrix.cofactors = function() {
 	var m1 = this.matrix,
-		nrows = _nrows(m1),
-		ncols = _ncols(m1),
+		rows = _rows(m1),
+		cols = _cols(m1),
 		factors = [],
 		rsign = 1, csign,
 		sub, r, c;
 	m1 = m1.slice(0);
 
-	for (r=0; r<nrows; r+=1) {
+	for (r=0; r<rows; r+=1) {
 		csign = rsign;
 		factors[r] = [];
-		for (c=0; c<ncols; c+=1) {
+		for (c=0; c<cols; c+=1) {
 			sub = _crossout(m1, [r, c]);
 			factors[r].push(Calc.matrix(sub).det() * csign);
 			csign *= -1;
@@ -1186,13 +1191,13 @@ matrix.adjugate = matrix.adj = function() {
 matrix.inverse = matrix.inv = function() {
 	var inst = this,
 		m1 = inst.matrix,
-		nrows = _nrows(m1),
-		ncols = _ncols(m1),
+		rows = _rows(m1),
+		cols = _cols(m1),
 		det = inst.det(),
 		inv;
-	if (nrows === 1 && ncols === 1) {
+	if (rows === 1 && cols === 1) {
 		inv = [[ 1 / m1[0][0] ]];
-	} else if (nrows > 1 && ncols > 1) {
+	} else if (rows > 1 && cols > 1) {
 		inv = (det ? inst.adjugate().scale(1/det) : NULL);
 	}
 	return Calc.matrix(inv);
@@ -1202,15 +1207,15 @@ matrix.inverse = matrix.inv = function() {
 matrix.identity = matrix.iden = function() {
 	var inst = this,
 		m1 = inst.matrix,
-		ncols = _ncols(m1),
+		cols = _cols(m1),
 		iden = [],
 		r, c,
 		d = 0,
 		value;
 		
-	for (r=0; r<ncols; r+=1) {
+	for (r=0; r<cols; r+=1) {
 		iden[r] = [];
-		for (c=0; c<ncols; c+=1) {
+		for (c=0; c<cols; c+=1) {
 			if (c == d) {
 				// If cell is on the diagonal, give it a value of one
 				value = 1;
