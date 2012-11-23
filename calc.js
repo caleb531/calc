@@ -2,20 +2,19 @@
 Caleb Evans
 Licensed under the MIT license
 **/
-(function(self, Math, parseFloat, parseInt, isNaN, String, Object, Array, TRUE, FALSE, NULL, UNDEFINED) {
+(function(self, Math, parseFloat, parseInt, isNaN, String, TRUE, FALSE, NULL, UNDEFINED) {
 
 // Calc function
 function Calc(input) {
 	var obj = this;
 	// Eliminate need to call "new"
-	if (obj === window) {
+	if (obj === self) {
 		return new Calc(input);
 	// If input is already wrapped
 	} else if (input && input.constructor === Calc) {
 		return input;
 	}
-	obj.original = input;
-	obj.value = input;
+	obj.original = obj[0] = input;
 	return this;
 }
 self.Calc = Calc;
@@ -56,9 +55,10 @@ function constructFn(name) {
 	if (fn.call) {
 		// Map "this" with method's first argument
 		Calc.fn[name] = function() {
-			var args = Array.prototype.slice.call(arguments, 0);
-			this[0] = fn.apply(this, [this[0]].concat(args));
-			return this;
+			var args = ([]).slice.call(arguments, 0),
+				obj = this;
+			obj[0] = fn.apply(this, [this[0]].concat(args));
+			return obj;
 		};
 	}
 }
@@ -67,7 +67,7 @@ function constructFn(name) {
 function makeChainable(name) {
 	var p;
 	// Apply to only a single method if specified
-	if (name !== undefined) {
+	if (name !== UNDEFINED) {
 		return constructFn(name);
 	// Else, apply to all methods
 	} else {
@@ -118,7 +118,7 @@ Calc.useDegrees = function(value) {
 Calc.abs = abs;
 Calc.ceil = ceil;
 Calc.floor = floor;
-Calc.round = Calc.rounded = function(num, places) {
+Calc.rounded = Calc.round = function(num, places) {
 	return places ? parseFloat(num.toFixed(places)) : round(num);
 };
 
@@ -127,9 +127,14 @@ Calc.nearest = function(num, n) {
 	return (n === 0) ? 0 : round(num / n) * n;
 };
 
+// Correct implementation of modulus
+Calc.mod = function(num, n) {
+	return ((num % n) + n) % n;
+};
+
 // Chop off decimal (different than floor)
-Calc.chop = Calc.chopped = function(num) {
-	return num >= 0 ? floor(num) : ceil(num);
+Calc.chopped = Calc.chop = function(num) {
+	return (num >= 0 ? floor(num) : ceil(num));
 };
 
 // Return 1, -1, or 0 (based on a number's sign)
@@ -155,46 +160,41 @@ Calc.correct = function(num) {
 
 /* Exponent module */
 
+// Raise number to a power
 Calc.pow = function(base, exp) {
 	if (exp === UNDEFINED) {exp = 2;}
 	return pow(base, exp);
 };
+// Get the nth root of a number
 Calc.root = function(base, root) {
 	if (root === UNDEFINED) {root = 2;}
 	return pow(base, 1/root);
 };
+// Take the base-n logarithm of a number (the default is base-10)
 Calc.log = function(num, base) {
 	if (base === UNDEFINED) {base = 10;}
 	return log(num) / log(base);
 };
+// Take the natural logarithm of a number
 Calc.ln = log;
+// Raise the constant e to a power
 Calc.exp = exp;
 
 /* Statistics module */
 
-Calc.sort = Calc.sorted = function(arr, fn) {
-	arr = arr.slice(0);
-	if (fn && fn.call) {
-		arr.sort(function(a, b) {
-			return fn(a) - fn(b);
-		});
-	} else {
-		arr.sort(function(a, b) {
-			return a - b;
-		});
-	}
-	return arr;
-};
+// Find the smallest value in an array
 Calc.min = function(arr) {
 	return Math.min.apply(Math, arr);
 };
+// Find the largest value in an array
 Calc.max = function(arr) {
 	return Math.max.apply(Math, arr);
 };
+// Get 
 Calc.range = function(arr) {
 	return Calc.max(arr) - Calc.min(arr);
 };
-// Generate an array of numbers through a certain range
+// Generate an array of numbers through a certain range (this method is equivalent to the range() function in other languages)
 Calc.thru = function(start, end, step) {
 	var arr = [], i;
 	// If no starting number is specified
@@ -219,6 +219,7 @@ Calc.thru = function(start, end, step) {
 	}
 	return arr;
 };
+// Calculate the sum of all numbers in an array
 Calc.sum = function(arr) {
 	var sum = 0, i;
 	for (i=0; i<arr.length; i+=1) {
@@ -226,7 +227,8 @@ Calc.sum = function(arr) {
 	}
 	return sum;
 };
-Calc.sigma = Calc.summation = function(a, b, fn) {
+// Calculate the summation of a through b (optionally using a callback function)
+Calc.summation = Calc.summate = Calc.sigma = function(a, b, fn) {
 	var sum = 0, i;
 	if (fn !== UNDEFINED) {
 		// If function is defined, get sum of series
@@ -239,19 +241,23 @@ Calc.sigma = Calc.summation = function(a, b, fn) {
 	}
 	return sum;
 };
-Calc.prod = Calc.product = function(arr) {
+// Calculate the product of all numbers in an array
+Calc.product = Calc.prod = function(arr) {
 	var prod = 1, i;
 	for (i=0; i<arr.length; i+=1) {
 		prod *= arr[i];
 	}
 	return prod;
 };
-Calc.mean = function(arr) {
+// Calculate the arithmetic mean of all numbers in an array
+Calc.mean = Calc.avg = function(arr) {
 	return Calc.sum(arr) / arr.length;
 };
+// Calculate the geometric mean of all numbers in an array
 Calc.geoMean = function(arr) {
 	return pow(Calc.product(arr), 1/arr.length);
 };
+// Calculate the median (middle value) of an array
 Calc.median = function(arr) {
 	var med, m1, m2;
 	arr = Calc.sort(arr);
@@ -266,7 +272,8 @@ Calc.median = function(arr) {
 	}
 	return med;
 };
-Calc.modes = function(arr) {
+// Calculate the modes (most-recurring numbers) of an array
+Calc.modes = Calc.mode = function(arr) {
 	var map = [],
 		modes = [],
 		maxCount = 1,
@@ -292,6 +299,8 @@ Calc.modes = function(arr) {
 	}
 	return modes;
 };
+// Calculate the sample variance of all numbers in an array
+// (Pass in true as a second argument to calculate population variance instead)
 Calc.variance = function(arr, pop) {
 	var n = arr.length,
 		mean = Calc.mean(arr),
@@ -308,18 +317,22 @@ Calc.variance = function(arr, pop) {
 	}
 	return inside;
 };
+// Calculate the sample standard deviation of all numbers in an array
+// (Pass in true as a second argument to calculate population standard deviation instead)
 Calc.stdDev = function(arr, pop) {
 	return sqrt(Calc.variance(arr, pop));
 };
 
 /* Geometry module */
 
+// Calculate the slope of the line created by two given points
 Calc.slope = function(pt1, pt2) {
 	var slope = (pt2[1] - pt1[1]) / (pt2[0] - pt1[0]);
 	if (slope === Infinity) {slope = NULL;}
 	return slope;
 };
-Calc.dist = Calc.distance = function(pt1, pt2) {
+// Calculate the distance of the two given points
+Calc.distance = Calc.dist = function(pt1, pt2) {
 	pt1 = pt1.slice(0);
 	pt2 = pt2.slice(0);
 	// Define z-value if omitted
@@ -328,7 +341,8 @@ Calc.dist = Calc.distance = function(pt1, pt2) {
 	
 	return sqrt(pow(pt2[0] - pt1[0], 2) + pow(pt2[1] - pt1[1], 2) + pow(pt2[2] - pt1[2], 2));
 };
-Calc.midpt = Calc.midpoint = function(pt1, pt2) {
+// Calculate the midpoint of the line created by two given points
+Calc.midpoint = Calc.midpt = function(pt1, pt2) {
 	pt1 = pt1.slice(0);
 	pt2 = pt2.slice(0);
 	// Define z-value if omitted
@@ -341,19 +355,34 @@ Calc.midpt = Calc.midpoint = function(pt1, pt2) {
 		(pt1[2] + pt2[2]) / 2
 	];
 };
-// Hypotenuse
+// Calculate the hypotenuse of a and b
 Calc.hypot = function(a, b) {
 	return sqrt(pow(a, 2) + pow(b, 2));
 };
-// Difference of two squares
+// Calculate the difference of two squares
 Calc.sqDiff = function(a, b) {
 	return pow(a, 2) - pow(b, 2);
 };
 
 /* Array module */
 
+// Sort an array numerically (or using a callback function)
+Calc.sorted = Calc.sort = function(arr, fn) {
+	arr = arr.slice(0);
+	if (fn && fn.call) {
+		arr.sort(function(a, b) {
+			return fn(a) - fn(b);
+		});
+	} else {
+		arr.sort(function(a, b) {
+			return a - b;
+		});
+	}
+	return arr;
+};
+
 // Filter an array of items using a function
-Calc.filter = Calc.filtered = function(arr, fn) {
+Calc.filtered = Calc.filter = function(arr, fn) {
 	var filtered, i;
 	if (arr.filter) {
 		filtered = arr.filter(fn);
@@ -407,7 +436,7 @@ Calc.unique = function(arr) {
 };
 
 // Reverse the order of an array or string
-Calc.reverse = Calc.reversed = function(arr) {
+Calc.reversed = Calc.reverse = function(arr) {
 	// Convert string to array
 	if (arr.split) {
 		arr = arr.split('');
@@ -434,16 +463,19 @@ Calc.factorial = function(num) {
 	}
 	return factorial;
 };
+// Calculate the number of permutations from a set of r elements in a total of n elements
 Calc.nPr = function(n, r) {
 	if (n < r) {return 0;}
 	return Calc.factorial(n) / Calc.factorial(n - r);
 };
+// Calculate the number of combinations from a set of r elements in a total of n elements
 Calc.nCr = function(n, r) {
 	if (n < r) {return 0;}
 	return Calc.factorial(n) / (Calc.factorial(n - r) * Calc.factorial(r));
 };
 
-Calc.permute = Calc.permut = function(arr, n) {
+// Calculate all possible permutations of elements in an array
+Calc.permut = Calc.permute = function(arr, n) {
 	var iArr, perms, perm;
 
 	// Array of calculated permutations
@@ -498,7 +530,7 @@ Calc.permute = Calc.permut = function(arr, n) {
 
 /* Trigonometry module */
 
-// Convert radians to degrees d 
+// Convert radians to degrees
 Calc.degrees = function(angle) {
 	return angle * (180 / PI);
 };
@@ -522,53 +554,107 @@ Calc.radiansf = function(angle) {
 		// 1*pi is just pi
 		.replace(/^(-)?1π/gi, '$1π')
 		// x/1 is just x
-		.replace(/\/1$/gi, '');
+		.replace(/\/1$/gi, '')
+		// Ensure 0pi is just 0
+		.replace(/^0π/gi, '0');
 	
 	return frac;
 };
 
 // Trig functions
+
+// Sine
 Calc.sin = function(angle) {
 	return Math.sin(angle * toRad);
 };
+// Cosine
 Calc.cos = function(angle) {
 	return Math.cos(angle * toRad);
 };
+// Tangent
 Calc.tan = function(angle) {
 	return Math.tan(angle * toRad);
 };
+
+// Reciprocal trig functions
+
+// Cosecant
+Calc.csc = function(angle) {
+	return 1 / Calc.sin(angle);
+};
+// Secant
+Calc.sec = function(angle) {
+	return 1 / Calc.cos(angle);
+};
+// Cotangent
+Calc.cot = function(angle) {
+	return 1 / Calc.tan(angle);
+};
+
+// Inverse trig functions
+
+// Arc (inverse) sine
 Calc.asin = function(num) {
 	return Math.asin(num) / toRad;
 };
+// Arc (inverse) cosine
 Calc.acos = function(num) {
 	return Math.acos(num) / toRad;
 };
+// Arc (inverse) tangent
 Calc.atan = function(num) {
 	return Math.atan(num) / toRad;
 };
+// Arc (inverse) tangent of the quotient of a and b
 Calc.atan2 = function(a, b) {
 	return Math.atan2(a, b) / toRad;
 };
 
+// Inverse reciprocal trig functions
+
+// Arc (inverse) cosecant
+Calc.acsc = function(num) {
+	return Calc.asin(1/num);
+};
+// Arc (inverse) secant
+Calc.asec = function(num) {
+	return Calc.acos(1/num);
+};
+// Arc (inverse) cotangent
+Calc.acot = function(num) {
+	return Calc.atan(1/num);
+};
+// Arc (inverse) cotangent of the quotient of a and b
+Calc.acot2 = function(a, b) {
+	return Calc.atan2(b, a);
+};
+
 // Hyperbolic functions
+
+// Hyperbolic sine
 Calc.sinh = function(angle) {
 	angle *= toRad;
 	return (exp(angle) - exp(-angle)) / 2;
 };
+// Hyperbolic cosine
 Calc.cosh = function(angle) {
 	angle *= toRad;
 	return (exp(angle) + exp(-angle)) / 2;
 };
+// Hyperbolic tangent
 Calc.tanh = function(angle) {
 	angle *= toRad;
 	return (exp(angle) - exp(-angle)) / (exp(angle) + exp(-angle));
 };
+// Arc (inverse) hyperbolic sine
 Calc.asinh = function(num) {
 	return log(num + sqrt(num*num + 1)) / toRad;
 };
+// Arc (inverse) hyperbolic cosine
 Calc.acosh = function(num) {
 	return log(num + sqrt(num*num - 1)) / toRad;
 };
+// Arc (inverse) hyperbolic tangent
 Calc.atanh = function(num) {
 	return log((1 + num) / (1 - num)) / 2 / toRad;
 };
@@ -582,7 +668,7 @@ Calc.coterminal = function(angle) {
 };
 
 // Convert polar coordinates to rectangular
-Calc.rect = function(pt) {
+Calc.rect = Calc.cart = function(pt) {
 	var x, y;
 	x = pt[0] * Calc.cos(pt[1]);
 	y = pt[0] * Calc.sin(pt[1]);
@@ -698,7 +784,7 @@ Calc.fib = function(n) {
 /* Representation module */
 
 // Convert to fraction
-Calc.frac = Calc.fraction = function(num) {
+Calc.fraction = Calc.frac = function(num) {
 	var dec = 1,
 		top = 1,
 		bot = 1,
@@ -724,7 +810,7 @@ Calc.frac = Calc.fraction = function(num) {
 			dec = top / bot;
 			i += 1;
 		} else {
-			return null;
+			return NULL;
 		}
 	}
 	// If fraction is zero, simplify it
@@ -739,9 +825,9 @@ Calc.frac = Calc.fraction = function(num) {
 };
 
 // Return a number as a formatted simplified fraction
-Calc.fracf = Calc.fractionf = function(num) {
+Calc.fractionf = Calc.fracf = function(num) {
 	var frac = Calc.frac(num);
-	if (frac === null) {
+	if (frac === NULL) {
 		frac = String(num);
 	} else {
 		frac = frac
@@ -870,7 +956,7 @@ Calc.isFib = function(num) {
 /* Random Module */
 
 // Get random number or arr index
-Calc.random = Calc.rand = function(a, b) {
+Calc.rand = Calc.random = function(a, b) {
 	if (a === UNDEFINED && b === UNDEFINED) {
 		a = 0;
 		b = 1;
@@ -891,7 +977,7 @@ Calc.randInt = function(a, b) {
 };
 
 // Scramble a arr of numbers
-Calc.scramble = Calc.scrambled = function(arr) {
+Calc.scrambled = Calc.scramble = function(arr) {
 	var item, i;
 	arr = arr.slice(0);
 	for (i=0; i<arr.length; i+=1) {
@@ -917,15 +1003,15 @@ Calc.base = function(num, base) {
 	return num.toString(base);
 };
 // Decimal
-Calc.dec = Calc.decimal = function(num, base) {
+Calc.decimal = Calc.dec = function(num, base) {
 	return parseInt(num, base);
 };
 // Binary
-Calc.bin = Calc.binary = function(num) {
+Calc.binary = Calc.bin = function(num) {
 	return num.toString(2);
 };
 // Octal
-Calc.oct = Calc.octal = function(num) {
+Calc.octal = Calc.oct = function(num) {
 	return num.toString(8);
 };
 // Hexadecimal
@@ -935,21 +1021,27 @@ Calc.hex = function(num) {
 
 /* Boolean module */
 
+// Logical NOT
 Calc.not = function(bool) {
 	return !bool;
 };
+// Logical AND
 Calc.and = function(bool1, bool2) {
 	return (!!bool1 && !!bool2);
 };
+// Logical OR
 Calc.or = function(bool1, bool2) {
 	return (!!bool1 || !!bool2);
 };
+// Logical XOR
 Calc.xor = function(bool1, bool2) {
 	return ((!!bool1 || !!bool2) && (bool1 !== bool2));
 };
+// Logical NAND
 Calc.nand = function(bool1, bool2) {
 	return !(!!bool1 && !!bool2);
 };
+// Logical NOR
 Calc.nor = function(bool1, bool2) {
 	return !(!!bool1 || !!bool2);
 };
@@ -977,7 +1069,7 @@ Calc.approx = function(fn, der) {
 function Matrix(m1) {
 	if (m1 && m1.constructor === Matrix) {
 		m1 = m1.matrix.slice(0);
-	} else if (m1 === undefined) {
+	} else if (m1 === UNDEFINED) {
 		m1 = [[1]];
 	}
 	this.matrix = m1;
@@ -1052,26 +1144,49 @@ matrix.scale = function(scalar) {
 };
 
 // Matrix traversal
+
+// Get the nth row
 matrix.row = function(r) {
 	return _row(this.matrix, r);
 };
+// Get the nth column
 matrix.col = function(c) {
 	return _col(this.matrix, c);
 };
-matrix.nrows = matrix.rows = function() {
-	return _rows(this.matrix);
-};
-matrix.ncols = matrix.cols = function() {
-	return _cols(this.matrix);
-};
+// Get the nth element
 matrix.value = function(index) {
 	var m1 = this.matrix,
 		cols = _cols(m1),
 		row = ceil(index / cols) - 1,
 		col = index % cols;
-	return m1[row][col];
-}
-matrix.nvalues = function() {
+
+	return (m1[row] ? m1[row][col] : UNDEFINED);
+};
+// Get the index of the first element with the given value
+matrix.index = function(value) {
+	var m1 = this.matrix,
+		rows = _rows(m1),
+		cols = _cols(m1),
+		r, c;
+	for (r=0; r<rows; r+=1) {
+		for (c=0; c<cols; c+=1) {
+			if (m1[r][c] === value) {
+				return (r * cols) + c;
+			}
+		}
+	}
+	return NULL;
+};
+// Count number of rows
+matrix.nrows = matrix.rows = function() {
+	return _rows(this.matrix);
+};
+// Count number of columns
+matrix.ncols = matrix.cols = function() {
+	return _cols(this.matrix);
+};
+// Count number of elements
+matrix.nvalues = matrix.values = function() {
 	var m1 = this.matrix;
 	return _rows(m1) * _cols(m1);
 };
@@ -1243,6 +1358,7 @@ function Vector(v1) {
 	v1[2] = v1[2] || 0;
 	this.vector = v1;
 }
+// Create vector
 Calc.vector = function(v1) {
 	return new Vector(v1);
 };
@@ -1302,4 +1418,4 @@ vector.cross = function(v2) {
 // Enable chaining for all Calc methods
 makeChainable();
 
-}(self, Math, parseFloat, parseInt, isNaN, String, Object, Array, true, false, null));
+}(self, Math, parseFloat, parseInt, isNaN, String, true, false, null));
