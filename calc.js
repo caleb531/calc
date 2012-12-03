@@ -88,7 +88,7 @@ Calc.correct = function(num) {
 		// Ensure 
 		repeat = parts[1].match(/(\d)\1{12}/gi);
 		if (repeat !== NULL) {
-			parts[1] = parts[1].replace(/\d{4}$/gi, repeat[0].substr(0, 3))
+			parts[1] = parts[1].replace(/\d{4}$/gi, repeat[0].substr(0, 4))
 			num = parseFloat(parts.join('.'));
 		}
 	}
@@ -757,9 +757,12 @@ Calc.fraction = Calc.frac = function(num) {
 		bot = 1,
 		i = 0,
 		sign;
+	console.log(num);
 	
 	// Correct number's rounding error to ensure accuracy
 	num = Calc.correct(num);
+
+	console.log(num);
 	
 	// Only deal with positive numbers
 	sign = Calc.sign(num);
