@@ -2,21 +2,10 @@
 Caleb Evans
 Licensed under the MIT license
 **/
-(function(self, Math, parseFloat, parseInt, isNaN, String, TRUE, FALSE, NULL, UNDEFINED) {
+(function(self, Math, parseFloat, parseInt, isNaN, Number, String, TRUE, FALSE, NULL, UNDEFINED) {
 
 // Calc function
-function Calc(input) {
-	var obj = this;
-	// Eliminate need to call "new"
-	if (obj === self) {
-		return new Calc(input);
-	// If input is already wrapped
-	} else if (input && input.constructor === Calc) {
-		return input;
-	}
-	obj.original = obj[0] = input;
-	return this;
-}
+var Calc = {};
 self.Calc = Calc;
 
 // Set variables (used as aliases)
@@ -32,8 +21,6 @@ var _Calc = self.Calc,
 	random = Math.random,
 	PI = Math.PI,
 	E = Math.E,
-	toRad = 1,
-	toDeg = 180 / PI,
 	radic = '\u221a',
 	matrix, vector;
 	
@@ -43,72 +30,12 @@ Calc.E = E;
 Calc.PHI = (1 + sqrt(5)) / 2;
 Calc.G = 6.673e-11;
 
-Calc.inDegrees = FALSE;
-
 /* Chaining module */
-
-Calc.fn = Calc.prototype;
-
-// Convert regular methods for the Calc function
-function constructFn(name) {
-	var fn = Calc[name];
-	if (fn.call) {
-		// Map "this" with method's first argument
-		Calc.fn[name] = function() {
-			var args = ([]).slice.call(arguments, 0),
-				obj = this;
-			obj[0] = fn.apply(this, [this[0]].concat(args));
-			return obj;
-		};
-	}
-}
-
-// Enable chaining for any Calc methods
-function makeChainable(name) {
-	var p;
-	// Apply to only a single method if specified
-	if (name !== UNDEFINED) {
-		return constructFn(name);
-	// Else, apply to all methods
-	} else {
-		for (p in Calc) {
-			if (!Calc.fn[p]) {
-				constructFn(p);
-			}
-		}
-	}
-}
-// Revert to original input
-Calc.fn.end = function() {
-	this[0] = this.original;
-	return this;
-};
-
-// Extend Calc
-Calc.extend = function(name, fn) {
-	Calc[name] = fn;
-	makeChainable(name);
-	return fn;
-};
 
 // Prevent naming conflicts
 Calc.noConflict = function() {
 	if (self.Calc === Calc) {
 		self.Calc = _Calc;
-	}
-	return Calc;
-};
-
-// Prefer degrees instead of radians if chosen
-Calc.useDegrees = function(value) {
-	if (value || value === UNDEFINED) {
-		toRad = PI / 180;
-		toDeg = 1;
-		Calc.inDegrees = TRUE;
-	} else {
-		toRad = 1;
-		toDeg = 180 / PI;
-		Calc.inDegrees = FALSE;
 	}
 	return Calc;
 };
@@ -150,10 +77,20 @@ Calc.sign = function(num) {
 	return sign;
 };
 
-// Fix binary rounding error
+// Correct a number's binary rounding error
 Calc.correct = function(num) {
-	if (String(num).indexOf('e') === -1 && Calc.round(num, 14) === Calc.round(num, 13)) {
-		num = Calc.round(num, 14);
+	var str = String(num),
+		parts = str.split('.'),
+		repeat;
+	
+	// Do not correct numbers in scientific notation
+	if (parts[0].match('e') === NULL && parts[1]) {
+		// Ensure 
+		repeat = parts[1].match(/(\d)\1{12}/gi);
+		if (repeat !== NULL) {
+			parts[1] = parts[1].replace(/\d{4}$/gi, repeat[0].substr(0, 3))
+			num = parseFloat(parts.join('.'));
+		}
 	}
 	return num;
 };
@@ -190,11 +127,12 @@ Calc.min = function(arr) {
 Calc.max = function(arr) {
 	return Math.max.apply(Math, arr);
 };
-// Get 
+// Get the range of an array of numbers (highest - lowest)
 Calc.range = function(arr) {
 	return Calc.max(arr) - Calc.min(arr);
 };
-// Generate an array of numbers through a certain range (this method is equivalent to the range() function in other languages)
+// Generate an array of numbers through a certain range
+// This method is equivalent to the range() function in other languages
 Calc.thru = function(start, end, step) {
 	var arr = [], i;
 	// If no starting number is specified
@@ -300,14 +238,14 @@ Calc.modes = Calc.mode = function(arr) {
 	return modes;
 };
 // Calculate the sample variance of all numbers in an array
-// (Pass in true as a second argument to calculate population variance instead)
+// Pass in true as a 2nd argument to calculate population variance
 Calc.variance = function(arr, pop) {
 	var n = arr.length,
 		mean = Calc.mean(arr),
 		top = 0,
 		inside, i;
 	for (i=0; i<arr.length; i+=1) {
-		top += pow(arr[i]-mean, 2);
+		top += pow(arr[i] - mean, 2);
 	}
 	// If population is chosen
 	if (pop) {
@@ -318,7 +256,7 @@ Calc.variance = function(arr, pop) {
 	return inside;
 };
 // Calculate the sample standard deviation of all numbers in an array
-// (Pass in true as a second argument to calculate population standard deviation instead)
+// Pass in true as a 2nd argument to calculate population stdDev
 Calc.stdDev = function(arr, pop) {
 	return sqrt(Calc.variance(arr, pop));
 };
@@ -542,12 +480,18 @@ Calc.radians = function(angle) {
 
 // Convert angle to radian notation
 Calc.radiansf = function(angle) {
-	angle *= toDeg;
-	// Convert to degrees
-	var frac = Calc.fractionf(angle / 180);
+
+	// Represent as fraction if possible
+	frac = Calc.fraction(angle / Calc.PI);
+
+	// If number is irrational, return it
+	if (frac[0] % 1 !== 0 && frac[0] === 1) {
+		return frac[0] + 'π';
+	}
 	
 	// Format fraction in terms of pi
 	frac = frac
+		.join('/')
 		// Multiply by pi
 		.replace(/^(-)?1$/gi, '$1π')
 		.replace(/\//gi, 'π/')
@@ -557,74 +501,60 @@ Calc.radiansf = function(angle) {
 		.replace(/\/1$/gi, '')
 		// Ensure 0pi is just 0
 		.replace(/^0π/gi, '0');
-	
+			
 	return frac;
 };
 
 // Trig functions
 
 // Sine
-Calc.sin = function(angle) {
-	return Math.sin(angle * toRad);
-};
+Calc.sin = Math.sin;
 // Cosine
-Calc.cos = function(angle) {
-	return Math.cos(angle * toRad);
-};
+Calc.cos = Math.cos;
 // Tangent
-Calc.tan = function(angle) {
-	return Math.tan(angle * toRad);
-};
+Calc.tan = Math.tan;
 
 // Reciprocal trig functions
 
 // Cosecant
 Calc.csc = function(angle) {
-	return 1 / Calc.sin(angle);
+	return 1 / Math.sin(angle);
 };
 // Secant
 Calc.sec = function(angle) {
-	return 1 / Calc.cos(angle);
+	return 1 / Math.cos(angle);
 };
 // Cotangent
 Calc.cot = function(angle) {
-	return 1 / Calc.tan(angle);
+	return 1 / Math.tan(angle);
 };
 
 // Inverse trig functions
 
-// Arc (inverse) sine
-Calc.asin = function(num) {
-	return Math.asin(num) / toRad;
-};
-// Arc (inverse) cosine
-Calc.acos = function(num) {
-	return Math.acos(num) / toRad;
-};
-// Arc (inverse) tangent
-Calc.atan = function(num) {
-	return Math.atan(num) / toRad;
-};
-// Arc (inverse) tangent of the quotient of a and b
-Calc.atan2 = function(a, b) {
-	return Math.atan2(a, b) / toRad;
-};
+// Inverse sine
+Calc.asin = Math.asin;
+// Inverse cosine
+Calc.acos = Math.acos;
+// Inverse tangent
+Calc.atan = Math.atan;
+// Inverse tangent of the quotient of a and b
+Calc.atan2 = Math.atan2;
 
 // Inverse reciprocal trig functions
 
-// Arc (inverse) cosecant
+// Inverse cosecant
 Calc.acsc = function(num) {
-	return Calc.asin(1/num);
+	return Calc.asin(1 / num);
 };
-// Arc (inverse) secant
+// Inverse secant
 Calc.asec = function(num) {
-	return Calc.acos(1/num);
+	return Calc.acos(1 / num);
 };
-// Arc (inverse) cotangent
+// Inverse cotangent
 Calc.acot = function(num) {
-	return Calc.atan(1/num);
+	return Calc.atan(1 / num);
 };
-// Arc (inverse) cotangent of the quotient of a and b
+// Inverse cotangent of the quotient of a and b
 Calc.acot2 = function(a, b) {
 	return Calc.atan2(b, a);
 };
@@ -633,38 +563,67 @@ Calc.acot2 = function(a, b) {
 
 // Hyperbolic sine
 Calc.sinh = function(angle) {
-	angle *= toRad;
 	return (exp(angle) - exp(-angle)) / 2;
 };
 // Hyperbolic cosine
 Calc.cosh = function(angle) {
-	angle *= toRad;
 	return (exp(angle) + exp(-angle)) / 2;
 };
 // Hyperbolic tangent
 Calc.tanh = function(angle) {
-	angle *= toRad;
 	return (exp(angle) - exp(-angle)) / (exp(angle) + exp(-angle));
 };
-// Arc (inverse) hyperbolic sine
+
+// Reciprocal hyperbolic functions
+
+// Hyperbolic cosecant
+Calc.csch = function(angle) {
+	return 1 / Calc.sinh(angle);
+};
+// Hyperbolic secant
+Calc.sech = function(angle) {
+	return 1 / Calc.cosh(angle);
+};
+// Hyperbolic cotangent
+Calc.coth = function(angle) {
+	return 1 / Calc.tanh(angle);
+};
+
+// Inverse hyperbolic functions
+
+// Inverse hyperbolic sine
 Calc.asinh = function(num) {
-	return log(num + sqrt(num*num + 1)) / toRad;
+	return log(num + sqrt(num*num + 1));
 };
-// Arc (inverse) hyperbolic cosine
+// Inverse hyperbolic cosine
 Calc.acosh = function(num) {
-	return log(num + sqrt(num*num - 1)) / toRad;
+	return log(num + sqrt(num*num - 1));
 };
-// Arc (inverse) hyperbolic tangent
+// Inverse hyperbolic tangent
 Calc.atanh = function(num) {
-	return log((1 + num) / (1 - num)) / 2 / toRad;
+	return log((1 + num) / (1 - num)) / 2;
+};
+
+// Inverse reciprocal hyperbolic functions
+
+// Inverse hyperbolic cosecant
+Calc.acsch = function(num) {
+	return Calc.asinh(1 / num);
+};
+// Inverse hyperbolic secant
+Calc.asech = function(num) {
+	return Calc.acosh(1 / num);
+};
+// Inverse hyperbolic cotangent
+Calc.acoth = function(num) {
+	return Calc.atanh(1 / num);
 };
 
 /* Coordinate module */
 
 // Find coterminal angle between 0 and 360 degrees
 Calc.coterminal = function(angle) {
-	angle *= toDeg;
-	return (angle - (360 * Calc.floor(angle/360)) ) / toDeg;
+	return angle - Calc.PI*2 * Calc.floor(angle/(Calc.PI*2));
 };
 
 // Convert polar coordinates to rectangular
@@ -694,9 +653,17 @@ Calc.quadrant = function(angle) {
 		angle = Calc.polar(angle)[1];
 	}
 	// Convert angle to radians
-	angle *= toRad;
-	remainder = angle - PI*2 * Calc.floor(angle/(PI*2));
-	quadrant = angle ? (Calc.ceil(remainder / (PI/2)) || 1) : 1;
+	remainder = angle - PI*2 * Calc.floor(angle / (PI*2));
+	// Default to first quadrant
+	quadrant = 1;
+	if (angle) {
+		// Calculate quadrant based on angle;
+		quadrant = Calc.ceil(remainder / (PI/2));
+		// Quadrant cannot be zero
+		if (quadrant === 0) {
+			quadrant = 1;
+		}
+	}
 	return quadrant;
 };
 
@@ -791,6 +758,7 @@ Calc.fraction = Calc.frac = function(num) {
 		i = 0,
 		sign;
 	
+	// Correct number's rounding error to ensure accuracy
 	num = Calc.correct(num);
 	
 	// Only deal with positive numbers
@@ -810,7 +778,7 @@ Calc.fraction = Calc.frac = function(num) {
 			dec = top / bot;
 			i += 1;
 		} else {
-			return NULL;
+			return [num, 1];
 		}
 	}
 	// If fraction is zero, simplify it
@@ -827,12 +795,10 @@ Calc.fraction = Calc.frac = function(num) {
 // Return a number as a formatted simplified fraction
 Calc.fractionf = Calc.fracf = function(num) {
 	var frac = Calc.frac(num);
-	if (frac === NULL) {
-		frac = String(num);
-	} else {
-		frac = frac
-			.join('/')
-	}
+	frac = frac
+		.join('/')
+		// x/1 is just x
+		.replace(/\/1$/gi, '');
 	return frac;
 };
 
@@ -879,14 +845,16 @@ Calc.radical = function(num) {
 
 // Return the square root of a number as a formatted simplified radical
 Calc.radicalf = function(num) {
-	return Calc.radical(num)
+	var rad = Calc.radical(num);
+	rad = rad
 		.join('√')
 		// 1√x is just √x
 		.replace(/1√/gi, '√')
 		// The square root of a negative number is an imaginary number
 		.replace(/√\-/gi, 'i√')
 		// x√1 is just x
-		.replace(/√1$/gi, '')
+		.replace(/√1$/gi, '');
+	return rad;
 };
 
 // Convert number to comma-separated string
@@ -1415,7 +1383,4 @@ vector.cross = function(v2) {
 	]);
 };
 
-// Enable chaining for all Calc methods
-makeChainable();
-
-}(self, Math, parseFloat, parseInt, isNaN, String, true, false, null));
+}(self, Math, parseFloat, parseInt, isNaN, Number, String, true, false, null));
