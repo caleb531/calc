@@ -85,10 +85,11 @@ Calc.correct = function(num) {
 	
 	// Do not correct numbers in scientific notation
 	if (parts[0].match('e') === NULL && parts[1]) {
-		// Ensure 
-		repeat = parts[1].match(/(\d)\1{12}/gi);
+		// Find repeating sequence of digits
+		repeat = parts[1].match(/(\d)\1{12}/);
 		if (repeat !== NULL) {
-			parts[1] = parts[1].replace(/\d{4}$/gi, repeat[0].substr(0, 4))
+			// Replace mismatched digits with repeating digit
+			parts[1] = parts[1].replace(/\d{4}$/, repeat[0].substr(0, 4));
 			num = parseFloat(parts.join('.'));
 		}
 	}
@@ -175,7 +176,7 @@ Calc.summation = Calc.summate = Calc.sigma = function(a, b, fn) {
 		}
 	} else {
 		// Otherwise, add up numbers from a through b
-		sum = (b - a + 1) * (a + b) / 2
+		sum = (b - a + 1) * (a + b) / 2;
 	}
 	return sum;
 };
@@ -482,7 +483,7 @@ Calc.radians = function(angle) {
 Calc.radiansf = function(angle) {
 
 	// Represent as fraction if possible
-	frac = Calc.fraction(angle / Calc.PI);
+	var frac = Calc.fraction(angle / Calc.PI);
 
 	// If number is irrational, return it
 	if (frac[0] % 1 !== 0 && frac[0] === 1) {
@@ -698,11 +699,11 @@ Calc.factors = function(arr) {
 			
 		// Loop through all possible factors
 		for (f=2; f<=min; f+=1) {
-			common = TRUE
+			common = TRUE;
 			for (i=0; i<arr.length; i+=1) {
 				// If number does not divide evenly, it is not a factor
 				if (arr[i] % f !== 0) {
-					common = FALSE
+					common = FALSE;
 				}
 			}
 			// If number is a common factor
@@ -757,13 +758,10 @@ Calc.fraction = Calc.frac = function(num) {
 		bot = 1,
 		i = 0,
 		sign;
-	console.log(num);
 	
 	// Correct number's rounding error to ensure accuracy
 	num = Calc.correct(num);
-
-	console.log(num);
-	
+		
 	// Only deal with positive numbers
 	sign = Calc.sign(num);
 	num = abs(num);
@@ -792,7 +790,7 @@ Calc.fraction = Calc.frac = function(num) {
 	// Make number negative again if necessary
 	top *= sign;
 	
-	return [top, bot]
+	return [top, bot];
 };
 
 // Return a number as a formatted simplified fraction
@@ -807,7 +805,7 @@ Calc.fractionf = Calc.fracf = function(num) {
 
 // Return the square root of a number as a simplified radical
 Calc.radical = function(num) {
-	var root, ans, f, negative;
+	var root, ans, factor, f, negative;
 	
 	// Make number negative later
 	if (num < 0) {
@@ -815,10 +813,10 @@ Calc.radical = function(num) {
 		negative = TRUE;
 	}
 		
-	// Calculate square root	
+	// Calculate square root
 	root = sqrt(num);
 	ans = [1, num];
-
+	
 	if (root % 1 === 0) {
 		// If number is a perfect square, skip other steps
 		ans = [root, 1];
@@ -880,7 +878,7 @@ Calc.commas = function(num) {
 
 // Remove commas from a comma-separated number
 Calc.noCommas = function(str) {
-	str = str.replace(/,/gi, '')
+	str = str.replace(/,/gi, '');
 	return parseFloat(str);
 };
 
@@ -914,7 +912,7 @@ Calc.isFib = function(num) {
 	if (num > 0) {
 		b = 5 * pow(num, 2) - 4;
 	} else {
-		b = a
+		b = a;
 	}
 	if (sqrt(a) % 1 === 0 || sqrt(b) % 1 === 0) {
 		ans = TRUE;
@@ -1302,7 +1300,7 @@ matrix.identity = matrix.iden = function() {
 	for (r=0; r<cols; r+=1) {
 		iden[r] = [];
 		for (c=0; c<cols; c+=1) {
-			if (c == d) {
+			if (c === d) {
 				// If cell is on the diagonal, give it a value of one
 				value = 1;
 			} else {
@@ -1314,7 +1312,7 @@ matrix.identity = matrix.iden = function() {
 		d += 1;
 	}
 	return Calc.matrix(iden);
-}
+};
 
 /* Vector module */
 
