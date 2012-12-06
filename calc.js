@@ -27,7 +27,7 @@ self.Calc = Calc;
 Calc.PI = PI;
 Calc.E = E;
 Calc.PHI = (1 + sqrt(5)) / 2;
-Calc.G = 6.67384e-11;
+Calc.G = 6.6738480e-11;
 
 /* Chaining module */
 
@@ -742,16 +742,17 @@ Calc.fib = function(n) {
 
 // Convert to fraction
 Calc.fraction = Calc.frac = function(num) {
-	var i, numerator;
+	var i, numerator,
+		epsilon = 1e-10;
 		
 	// Cap number of operations at 10,000 for the sake of performance
-	for (i=1; i<5e4; i+=1) {
-		numerator = num * i;
+	for (d=1; d<5e4; d+=1) {
+		numerator = num * d;
 		// Check if the proposed numerator is close enough to an integer
 		// This check will account for binary rounding error
-		if ((numerator % 1) < 1e-10 || 1 - (numerator % 1) < 1e-10) {
+		if (abs(numerator % 1) < epsilon || 1 - abs(numerator % 1) < epsilon) {
 			// Stop when a numerator is found
-			return [round(numerator), i];
+			return [round(numerator), d];
 		}
 	}
 	return [num, 1];
@@ -973,23 +974,6 @@ Calc.nand = function(bool1, bool2) {
 // Logical NOR
 Calc.nor = function(bool1, bool2) {
 	return !(!!bool1 || !!bool2);
-};
-
-/* Function module */
-
-// Approximate zeroes of function using Newton's Method
-Calc.approx = function(fn, der) {
-	var x = [-fn(0)], n = 1;
-	
-	if (x[0] !== 0) {
-		for (n=0; n<1e5; n+=1) {
-			x.push(x[n] - (fn(x[n]) / der(x[n])));
-			if (x[x.length-1] === x[x.length-2]) {
-				break;
-			}
-		}
-	}
-	return x[x.length-1];
 };
 
 /* Matrix module */
