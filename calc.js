@@ -2,15 +2,13 @@
 Caleb Evans
 Licensed under the MIT license
 **/
-(function(self, Math, parseFloat, parseInt, isNaN, Number, String, TRUE, FALSE, NULL, UNDEFINED) {
+(function(self, Math, parseFloat, parseInt, String, TRUE, FALSE, NULL, UNDEFINED) {
 
-// Calc function
-var Calc = {};
-self.Calc = Calc;
-
-// Set variables (used as aliases)
-var _Calc = self.Calc,
+// Calc object
+var Calc = {},
+	_Calc = self.Calc,
 	abs = Math.abs,
+	// Set variables (used as aliases)
 	round = Math.round,
 	floor = Math.floor,
 	ceil = Math.ceil,
@@ -21,14 +19,15 @@ var _Calc = self.Calc,
 	random = Math.random,
 	PI = Math.PI,
 	E = Math.E,
-	radic = '\u221a',
 	matrix, vector;
 	
+self.Calc = Calc;
+
 // Calc constants
 Calc.PI = PI;
 Calc.E = E;
 Calc.PHI = (1 + sqrt(5)) / 2;
-Calc.G = 6.673e-11;
+Calc.G = 6.67384e-11;
 
 /* Chaining module */
 
@@ -46,7 +45,7 @@ Calc.abs = abs;
 Calc.ceil = ceil;
 Calc.floor = floor;
 Calc.rounded = Calc.round = function(num, places) {
-	return places ? parseFloat(num.toFixed(places)) : round(num);
+	return (places ? parseFloat(num.toFixed(places)) : round(num));
 };
 
 // Round to nearest multiple of n
@@ -54,7 +53,7 @@ Calc.nearest = function(num, n) {
 	return (n === 0) ? 0 : round(num / n) * n;
 };
 
-// Correct implementation of modulus
+// Correct implementation of the modulo operator
 Calc.mod = function(num, n) {
 	return ((num % n) + n) % n;
 };
@@ -80,18 +79,13 @@ Calc.sign = function(num) {
 // Correct a number's binary rounding error
 Calc.correct = function(num) {
 	var str = String(num),
-		parts = str.split('.'),
-		repeat;
+		parts = str.split('.');
 	
 	// Do not correct numbers in scientific notation
 	if (parts[0].match('e') === NULL && parts[1]) {
-		// Find repeating sequence of digits
-		repeat = parts[1].match(/(\d)\1{12}/);
-		if (repeat !== NULL) {
-			// Replace mismatched digits with repeating digit
-			parts[1] = parts[1].replace(/\d{4}$/, repeat[0].substr(0, 4));
-			num = parseFloat(parts.join('.'));
-		}
+		// Replace mismatching digits with repeating digit
+		parts[1] = parts[1].replace(/(\d)(\1{12})(\d{1,2})$/, '$1$2$2');
+		num = parseFloat(parts.join('.'));
 	}
 	return num;
 };
@@ -106,8 +100,10 @@ Calc.pow = function(base, exp) {
 // Get the nth root of a number
 Calc.root = function(base, root) {
 	if (root === UNDEFINED) {root = 2;}
-	return pow(base, 1/root);
+	return pow(base, 1 / root);
 };
+// Alias to Math.sqrt() for convenience
+Calc.sqrt = sqrt;
 // Take the base-n logarithm of a number (the default is base-10)
 Calc.log = function(num, base) {
 	if (base === UNDEFINED) {base = 10;}
@@ -194,7 +190,7 @@ Calc.mean = Calc.avg = function(arr) {
 };
 // Calculate the geometric mean of all numbers in an array
 Calc.geoMean = function(arr) {
-	return pow(Calc.product(arr), 1/arr.length);
+	return pow(Calc.product(arr), 1 / arr.length);
 };
 // Calculate the median (middle value) of an array
 Calc.median = function(arr) {
@@ -202,12 +198,12 @@ Calc.median = function(arr) {
 	arr = Calc.sort(arr);
 	// If list has no true median
 	if (arr.length % 2 === 0) {
-		m1 = arr[arr.length/2 - 1];
-		m2 = arr[arr.length/2];
+		m1 = arr[(arr.length / 2) - 1];
+		m2 = arr[(arr.length / 2)];
 		med = Calc.mean([m1, m2]);
 	// But if it does...
 	} else {
-		med = arr[floor(arr.length/2)];
+		med = arr[floor(arr.length / 2)];
 	}
 	return med;
 };
@@ -437,7 +433,7 @@ Calc.permut = Calc.permute = function(arr, n) {
 
 	// Internal permute function
 	function _permute(iPerm) {
-		var i;
+		var items, i;
 
 		// If permutation reaches the given length, use it
 		if (iPerm.length === n) {
@@ -453,7 +449,7 @@ Calc.permut = Calc.permute = function(arr, n) {
 		} else {
 			
 			// Construct list of items that are not currently used
-			var items = Calc.filtered(iArr, function(v, k) {
+			items = Calc.filtered(iArr, function(v, k) {
 				return (Calc.index(iPerm, v) === -1);
 			});
 			
@@ -483,7 +479,7 @@ Calc.radians = function(angle) {
 Calc.radiansf = function(angle) {
 
 	// Represent as fraction if possible
-	var frac = Calc.fraction(angle / Calc.PI);
+	var frac = Calc.frac(angle / Calc.PI);
 
 	// If number is irrational, return it
 	if (frac[0] % 1 !== 0 && frac[0] === 1) {
@@ -624,7 +620,7 @@ Calc.acoth = function(num) {
 
 // Find coterminal angle between 0 and 360 degrees
 Calc.coterminal = function(angle) {
-	return angle - Calc.PI*2 * Calc.floor(angle/(Calc.PI*2));
+	return angle - 2*PI * Calc.floor(angle / (2*PI));
 };
 
 // Convert polar coordinates to rectangular
@@ -648,24 +644,17 @@ Calc.polar = function(pt) {
 
 // Find quadrant fron a given angle or point
 Calc.quadrant = function(angle) {
-	var quadrant, remainder;
-	// If input is a set of points
-	if (angle.push) {
-		angle = Calc.polar(angle)[1];
-	}
-	// Convert angle to radians
-	remainder = angle - PI*2 * Calc.floor(angle / (PI*2));
-	// Default to first quadrant
-	quadrant = 1;
-	if (angle) {
-		// Calculate quadrant based on angle;
-		quadrant = Calc.ceil(remainder / (PI/2));
-		// Quadrant cannot be zero
-		if (quadrant === 0) {
-			quadrant = 1;
-		}
+	var quadrant = ceil((Calc.coterminal(angle) / (Calc.PI*2)) * 4);
+	// Quadrant cannot be zero
+	if (quadrant === 0) {
+		quadrant = 1;
 	}
 	return quadrant;
+};
+
+// Find the reference angle of the given angle (distance from the x-axis)
+Calc.refAngle = function(angle) {
+	return abs(Calc.nearest(angle, PI) - angle);
 };
 
 /* Factor module */
@@ -753,44 +742,19 @@ Calc.fib = function(n) {
 
 // Convert to fraction
 Calc.fraction = Calc.frac = function(num) {
-	var dec = 1,
-		top = 1,
-		bot = 1,
-		i = 0,
-		sign;
-	
-	// Correct number's rounding error to ensure accuracy
-	num = Calc.correct(num);
+	var i, numerator;
 		
-	// Only deal with positive numbers
-	sign = Calc.sign(num);
-	num = abs(num);
-	
-	while (dec !== num) {
-		if (i < 1e5) {
-			if (dec < num) {
-				// Make fraction bigger if too small
-				top += 1;
-			} else {
-				// Mae fraction smaller if too big
-				bot += 1;
-				top = floor(num * bot);
-			}
-			dec = top / bot;
-			i += 1;
-		} else {
-			return [num, 1];
+	// Cap number of operations at 10,000 for the sake of performance
+	for (i=1; i<5e4; i+=1) {
+		numerator = num * i;
+		// Check if the proposed numerator is close enough to an integer
+		// This check will account for binary rounding error
+		if ((numerator % 1) < 1e-10 || 1 - (numerator % 1) < 1e-10) {
+			// Stop when a numerator is found
+			return [round(numerator), i];
 		}
 	}
-	// If fraction is zero, simplify it
-	if (top === 0) {
-		top = 0;
-		bot = 1;
-	}
-	// Make number negative again if necessary
-	top *= sign;
-	
-	return [top, bot];
+	return [num, 1];
 };
 
 // Return a number as a formatted simplified fraction
@@ -805,14 +769,12 @@ Calc.fractionf = Calc.fracf = function(num) {
 
 // Return the square root of a number as a simplified radical
 Calc.radical = function(num) {
-	var root, ans, factor, f, negative;
+	var root, ans, factor, f, sign;
 	
-	// Make number negative later
-	if (num < 0) {
-		num = abs(num);
-		negative = TRUE;
-	}
-		
+	// Capture sign of number to apply later
+	sign = Calc.sign(num);
+	num = abs(num);
+	
 	// Calculate square root
 	root = sqrt(num);
 	ans = [1, num];
@@ -829,17 +791,15 @@ Calc.radical = function(num) {
 				root = sqrt(factor);
 				// If factor is also a perfect square, use it
 				if (root % 1 === 0) {
-					ans = [root, num/factor];
+					ans = [root, num / factor];
 					break;
 				}
 			}
 		}
 	}
 	
-	// Make radical imaginary if necessary
-	if (negative) {
-		ans[1] *= -1;
-	}
+	// Ensure number's sign is kept
+	ans[1] *= sign;
 	
 	return ans;
 };
@@ -945,7 +905,7 @@ Calc.randInt = function(a, b) {
 	return round(Calc.rand(a, b));
 };
 
-// Scramble a arr of numbers
+// Scramble an array of numbers
 Calc.scrambled = Calc.scramble = function(arr) {
 	var item, i;
 	arr = arr.slice(0);
@@ -956,12 +916,12 @@ Calc.scrambled = Calc.scramble = function(arr) {
 	}
 	return arr;
 };
-// Get a random selection from a arr
+// Get a random selection of n items from an array
 Calc.choices = function(arr, n) {
 	return Calc.scramble(arr).slice(0, n || 1);
 };
-// Get a random number from a arr
-Calc.choice = function(arr, n) {
+// Get a random number from an array
+Calc.choice = function(arr) {
 	return Calc.scramble(arr)[0];
 };
 
@@ -1022,7 +982,7 @@ Calc.approx = function(fn, der) {
 	var x = [-fn(0)], n = 1;
 	
 	if (x[0] !== 0) {
-		for (n=0; n<10e5; n+=1) {
+		for (n=0; n<1e5; n+=1) {
 			x.push(x[n] - (fn(x[n]) / der(x[n])));
 			if (x[x.length-1] === x[x.length-2]) {
 				break;
@@ -1218,14 +1178,16 @@ matrix.multiply = function(m2) {
 matrix.det = matrix.determinant = function() {
 	var m1 = this.matrix,
 		rows = _rows(m1),
-		cols = _cols(m1);
+		cols = _cols(m1),
+		det;
 	if (rows === 1 && cols === 1) {
-		return m1[0][0];
+		det = m1[0][0];
 	} else if (rows > 1 && cols > 1) {
-		return _det(m1);
+		det = _det(m1);
 	} else {
-		return NULL;
+		det = NULL;
 	}
+	return det;
 };
 
 // Transpose (reflect) matrix
@@ -1282,7 +1244,7 @@ matrix.inverse = matrix.inv = function() {
 	if (rows === 1 && cols === 1) {
 		inv = [[ 1 / m1[0][0] ]];
 	} else if (rows > 1 && cols > 1) {
-		inv = (det ? inst.adjugate().scale(1/det) : NULL);
+		inv = (det ? inst.adjugate().scale(1 / det) : NULL);
 	}
 	return Calc.matrix(inv);
 };
@@ -1384,4 +1346,4 @@ vector.cross = function(v2) {
 	]);
 };
 
-}(self, Math, parseFloat, parseInt, isNaN, Number, String, true, false, null));
+}(self, Math, parseFloat, parseInt, String, true, false, null));
