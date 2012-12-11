@@ -27,7 +27,7 @@ self.Calc = Calc;
 Calc.PI = PI;
 Calc.E = E;
 Calc.PHI = (1 + sqrt(5)) / 2;
-Calc.G = 6.6738480e-11;
+Calc.G = 6.673848e-11;
 
 /* Chaining module */
 
@@ -132,6 +132,7 @@ Calc.range = function(arr) {
 // This method is equivalent to the range() function in other languages
 Calc.thru = function(start, end, step) {
 	var arr = [], i;
+	
 	// If no starting number is specified
 	if (end === UNDEFINED) {
 		end = start;
@@ -141,16 +142,14 @@ Calc.thru = function(start, end, step) {
 	// If step is 0 or undefined
 	if (!step) {step = 1;}
 	
-	// If step is positive
-	if (start < end) {
-		for (i=start; i<end+1; i+=step) {
-			arr.push(i);
-		}
-	// If step is negative
-	} else {
-		for (i=start; i>end; i+=step) {
-			arr.push(i);
-		}
+	// Prevent infinite loop if the start number is greater than the end number
+	if (start > end) {
+		step = -1;
+	}
+	
+	// Handle ranges in both directions
+	for (i=start; i!==end; i+=step) {
+		arr.push(i);
 	}
 	return arr;
 };
@@ -479,7 +478,7 @@ Calc.radians = function(angle) {
 Calc.radiansf = function(angle) {
 
 	// Represent as fraction if possible
-	var frac = Calc.frac(angle / Calc.PI);
+	var frac = Calc.frac(angle / PI);
 
 	// If number is irrational, return it
 	if (frac[0] % 1 !== 0 && frac[0] === 1) {
@@ -590,11 +589,11 @@ Calc.coth = function(angle) {
 
 // Inverse hyperbolic sine
 Calc.asinh = function(num) {
-	return log(num + sqrt(num*num + 1));
+	return log(num + sqrt(pow(num, 2) + 1));
 };
 // Inverse hyperbolic cosine
 Calc.acosh = function(num) {
-	return log(num + sqrt(num*num - 1));
+	return log(num + sqrt(pow(num, 2) - 1));
 };
 // Inverse hyperbolic tangent
 Calc.atanh = function(num) {
@@ -618,9 +617,9 @@ Calc.acoth = function(num) {
 
 /* Coordinate module */
 
-// Find coterminal angle between 0 and 360 degrees
+// Find coterminal angle between 0 and 2pi (360 degrees)
 Calc.coterminal = function(angle) {
-	return angle - 2*PI * Calc.floor(angle / (2*PI));
+	return angle - (2*PI) * Calc.floor(angle / (2*PI));
 };
 
 // Convert polar coordinates to rectangular
@@ -644,7 +643,7 @@ Calc.polar = function(pt) {
 
 // Find quadrant fron a given angle or point
 Calc.quadrant = function(angle) {
-	var quadrant = ceil((Calc.coterminal(angle) / (Calc.PI*2)) * 4);
+	var quadrant = ceil((Calc.coterminal(angle) / (2*PI)) * 4);
 	// Quadrant cannot be zero
 	if (quadrant === 0) {
 		quadrant = 1;
@@ -661,15 +660,17 @@ Calc.refAngle = function(angle) {
 
 // Get factors
 Calc.factors = function(arr) {
-	// Create and clone arr
-	if (!arr || !arr.push) {
-		arr = [arr];
-	} else {
-		arr = arr.slice(0);
-	}
 	var common, min,
 		factors = [1],
 		f, i;
+	
+	if (!arr.push) {
+		//If a number is given, wrap it in an array
+		arr = [arr];
+	} else {
+		// Clone array
+		arr = arr.slice(0);
+	}
 	
 	// Keep only positive numbers
 	for (i=0; i<arr.length; i+=1) {
@@ -705,7 +706,7 @@ Calc.factors = function(arr) {
 	return factors;
 };
 // Get greatest common factor
-Calc.gcf = function(arr) {
+Calc.gcf = Calc.gcd = function(arr) {
 	var factors = Calc.factors(arr);
 	return factors[factors.length-1];
 };
@@ -715,7 +716,7 @@ Calc.lcm = function(arr) {
 	var prod, lcm, common, m, i;
 	prod = Calc.product(arr);
 	
-	// Loop throughn possible multiples
+	// Loop through possible multiples
 	for (m=1; m<=prod; m+=1) {
 		common = TRUE;
 		for (i=0; i<arr.length; i+=1) {
@@ -733,7 +734,7 @@ Calc.lcm = function(arr) {
 	return lcm;
 };
 
-// Get Fibonacci numbers through index n
+// Calculate the nth Fibonacci number
 Calc.fib = function(n) {
 	return round(pow(Calc.PHI, n) / sqrt(5));
 };
@@ -742,15 +743,16 @@ Calc.fib = function(n) {
 
 // Convert to fraction
 Calc.fraction = Calc.frac = function(num) {
-	var i, numerator,
-		epsilon = 1e-10;
+	var epsilon = 1e-12,
+		numerator, absNum, i;
 		
-	// Cap number of operations at 10,000 for the sake of performance
+	// Cap number of operations at 50,000 for the sake of performance
 	for (d=1; d<5e4; d+=1) {
 		numerator = num * d;
+		absNum = abs(numerator);
 		// Check if the proposed numerator is close enough to an integer
 		// This check will account for binary rounding error
-		if (abs(numerator % 1) < epsilon || 1 - abs(numerator % 1) < epsilon) {
+		if ((absNum % 1) < epsilon || 1 - (absNum % 1) < epsilon) {
 			// Stop when a numerator is found
 			return [round(numerator), d];
 		}
@@ -849,7 +851,7 @@ Calc.isEven = function(num) {
 	return (num % 2 === 0);
 };
 Calc.isOdd = function(num) {
-	return (num % 2 === 1);
+	return (abs(num) % 2 === 1);
 };
 Calc.isInteger = function(num) {
 	return (num % 1 === 0);
@@ -862,7 +864,7 @@ Calc.isComposite = function(num) {
 	num = abs(num);
 	return (Calc.factors(num).length > 2);
 };
-Calc.isFactor = function(factor, num) {
+Calc.isFactor = Calc.isFactorOf = function(factor, num) {
 	return (num % factor === 0);
 };
 // If number is in Fibonacci sequence
@@ -1228,7 +1230,11 @@ matrix.inverse = matrix.inv = function() {
 	if (rows === 1 && cols === 1) {
 		inv = [[ 1 / m1[0][0] ]];
 	} else if (rows > 1 && cols > 1) {
-		inv = (det ? inst.adjugate().scale(1 / det) : NULL);
+		if (det) {
+			inv = inst.adjugate().scale(1 / det);
+		} else {
+			return NULL;
+		}
 	}
 	return Calc.matrix(inv);
 };
