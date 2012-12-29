@@ -76,6 +76,11 @@ Calc.sign = function(num) {
 	return sign;
 };
 
+// Bring a number closer to zero by a given amount
+Calc.toZero = function(num, inc) {
+	return num - (Calc.sign(num) * inc);
+};
+
 // Correct a number's binary rounding error
 Calc.correct = function(num) {
 	var str = String(num),
@@ -211,23 +216,22 @@ Calc.modes = Calc.mode = function(arr) {
 	var map = [],
 		modes = [],
 		maxCount = 1,
-		item, i;
+		num, i;
 	for (i=0; i<arr.length; i+=1) {
-		item = arr[i];
-		if (map[item] === UNDEFINED) {
-			map[item] = 1;
+		num = arr[i];
+		if (map[num] === UNDEFINED) {
+			map[num] = 1;
 		} else {
-			map[item] += 1;
+			map[num] += 1;
 		}
-		if (map[item] > maxCount) {
-			modes = [item];
-			maxCount = map[item];
-		} else if (map[item] === maxCount) {
-			modes.unshift(item);
-			maxCount = map[item];
+		if (map[num] > maxCount) {
+			modes = [num];
+			maxCount = map[num];
+		} else if (map[num] === maxCount) {
+			modes.unshift(num);
 		}
 	}
-	// There are no modes if no repeating arr items are found
+	// There are no modes if no repeating numbers are found
 	if (modes.length === arr.length) {
 		modes = [];
 	}
@@ -382,13 +386,32 @@ Calc.reversed = Calc.reverse = function(arr) {
 	return arr;
 };
 
+// Flatten an array (reduce its hierarchy to one level)
+Calc.flattened = Calc.flatten = function flatten(arr) {
+
+	var flattened = [], i;
+	
+	for (i=0; i<arr.length; i+=1) {
+				
+		if (({}).toString.call(arr[i]).indexOf('Array') !== -1) {
+			// Recursively flatten nested arrays
+			flattened = flattened.concat(flatten(arr[i]));
+		} else {
+			// Simply append items that aren't nested
+			flattened.push(arr[i]);
+		}
+		
+	}
+	return flattened;
+};
+
 /* Combinatorics module */
 
 Calc.factorial = function(num) {
 	var factorial = num, i;
 	if (num === 0) {
 		factorial = 1;
-	} else if (num > 0 && num % 1 === 0) {
+	} else if (num % 1 === 0) {
 		for (i=1; i<num; i+=1) {
 			factorial *= i;
 		}
@@ -712,7 +735,7 @@ Calc.gcf = Calc.gcd = function(arr) {
 };
 
 // Get least common multiple
-Calc.lcm = function(arr) {
+Calc.lcm = Calc.lcd = function(arr) {
 	var prod, lcm, common, m, i;
 	prod = Calc.product(arr);
 	
@@ -738,6 +761,22 @@ Calc.lcm = function(arr) {
 Calc.fib = function(n) {
 	return round(pow(Calc.PHI, n) / sqrt(5));
 };
+// Calculate the nth prime number
+Calc.prime = function(n) {
+	var i = 0,
+		p = 0,
+		prime,
+		isPrime;
+		
+	for (i=0; p<=n; i+=1) {
+		isPrime = Calc.isPrime(i);
+		if (isPrime) {
+			prime = i;
+			p += 1;
+		}
+	}
+	return prime;
+}
 
 /* Representation module */
 
@@ -870,10 +909,10 @@ Calc.isFactor = Calc.isFactorOf = function(factor, num) {
 // If number is in Fibonacci sequence
 Calc.isFib = function(num) {
 	var ans, a, b;
-	a = 5 * pow(num, 2) + 4;
+	a = (5 * pow(num, 2)) + 4;
 	// Accept zero as input
 	if (num > 0) {
-		b = 5 * pow(num, 2) - 4;
+		b = (5 * pow(num, 2)) - 4;
 	} else {
 		b = a;
 	}
