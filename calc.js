@@ -407,6 +407,7 @@ Calc.flattened = Calc.flatten = function flatten(arr) {
 
 /* Combinatorics module */
 
+// Compute the factorial of an integer
 Calc.factorial = function(num) {
 	var factorial = num, i;
 	if (num === 0) {
@@ -432,7 +433,7 @@ Calc.nCr = function(n, r) {
 };
 
 // Calculate all possible permutations of elements in an array
-Calc.permut = Calc.permute = function(arr, n) {
+Calc.perms = Calc.permute = function(arr, n) {
 	var iArr, perms, perm;
 
 	// Array of calculated permutations
@@ -454,14 +455,14 @@ Calc.permut = Calc.permute = function(arr, n) {
 	});
 
 	// Internal permute function
-	function _permute(iPerm) {
+	function _permute(permIndices) {
 		var items, i;
 
 		// If permutation reaches the given length, use it
-		if (iPerm.length === n) {
+		if (permIndices.length === n) {
 			
 			// Convert array of indices to array of items
-			perm = Calc.map(iPerm, function(v, k) {
+			perm = Calc.map(permIndices, function(v, k) {
 				return arr[v];
 			});
 			
@@ -472,11 +473,11 @@ Calc.permut = Calc.permute = function(arr, n) {
 			
 			// Construct list of items that are not currently used
 			items = Calc.filtered(iArr, function(v, k) {
-				return (Calc.index(iPerm, v) === -1);
+				return (Calc.index(permIndices, v) === -1);
 			});
 			
 			for(i=0; i<items.length; i+=1) {
-				_permute(iPerm.concat(items[i]));
+				_permute(permIndices.concat(items[i]));
 			}
 		}
     
@@ -537,15 +538,15 @@ Calc.tan = Math.tan;
 
 // Cosecant
 Calc.csc = function(angle) {
-	return 1 / Math.sin(angle);
+	return 1 / Calc.sin(angle);
 };
 // Secant
 Calc.sec = function(angle) {
-	return 1 / Math.cos(angle);
+	return 1 / Calc.cos(angle);
 };
 // Cotangent
 Calc.cot = function(angle) {
-	return 1 / Math.tan(angle);
+	return 1 / Calc.tan(angle);
 };
 
 // Inverse trig functions
@@ -716,6 +717,7 @@ Calc.factors = function(arr) {
 			for (i=0; i<arr.length; i+=1) {
 				// If number does not divide evenly, it is not a factor
 				if (arr[i] % f !== 0) {
+					// If factor is not a common factor, don't check factor against other numbers
 					common = FALSE;
 				}
 			}
@@ -743,8 +745,9 @@ Calc.lcm = Calc.lcd = function(arr) {
 	for (m=1; m<=prod; m+=1) {
 		common = TRUE;
 		for (i=0; i<arr.length; i+=1) {
-			// If number is multiple
+			// If number is not a multiple, it is not an LCM
 			if (m % arr[i] !== 0) {
+				// If number is not an LCM, don't check number against other numbers
 				common = FALSE;
 			}
 		}
@@ -776,7 +779,7 @@ Calc.prime = function(n) {
 		}
 	}
 	return prime;
-}
+};
 
 /* Representation module */
 
@@ -865,15 +868,7 @@ Calc.commas = function(num) {
 	var parts = String(num).split('.');
 	// Do not convert if number is exponential
 	if (parts[0].indexOf('e') === -1) {
-		parts[0] = parts[0]
-			.split('')
-			.reverse()
-			.join('')
-			.replace(/(\d{3})/gi, '$1,')
-			.replace(/,(-?)$/gi, '$1')
-			.split('')
-			.reverse()
-			.join('');
+		parts[0] = parts[0].replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,");
 	}
 	return parts.join('.');
 };
@@ -926,7 +921,7 @@ Calc.isFib = function(num) {
 
 /* Random Module */
 
-// Get random number or arr index
+// Get random number or array index
 Calc.rand = Calc.random = function(a, b) {
 	if (a === UNDEFINED && b === UNDEFINED) {
 		a = 0;
@@ -935,7 +930,7 @@ Calc.rand = Calc.random = function(a, b) {
 		b = a;
 		a = 0;
 	}
-	// Get random index of the given arr
+	// Get random index of the given array
 	if (b.length) {
 		return floor(b.length * random());
 	}
