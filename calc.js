@@ -1,7 +1,8 @@
-/**@license Calc
-Caleb Evans
-Licensed under the MIT license
-**/
+/** @license
+ * Calc
+ * Copyright 2013, Caleb Evans
+ * Licensed under the MIT license
+ */
 (function(self, Math, parseFloat, parseInt, String, TRUE, FALSE, NULL, UNDEFINED) {
 
 // Calc object
@@ -89,7 +90,7 @@ Calc.correct = function(num) {
 	// Do not correct numbers in scientific notation
 	if (parts[0].match('e') === NULL && parts[1]) {
 		// Replace mismatching digits with repeating digit
-		parts[1] = parts[1].replace(/(\d)(\1{12})(\d{1,2})$/, '$1$2$2');
+		parts[1] = parts[1].replace(/(\d)(\1{10})(\d{1,2})$/, '$1$2$2');
 		num = parseFloat(parts.join('.'));
 	}
 	return num;
@@ -98,20 +99,19 @@ Calc.correct = function(num) {
 /* Exponent module */
 
 // Raise number to a power
-Calc.pow = function(base, exp) {
-	if (exp === UNDEFINED) {exp = 2;}
-	return pow(base, exp);
-};
+Calc.pow = pow;
 // Get the nth root of a number
 Calc.root = function(base, root) {
-	if (root === UNDEFINED) {root = 2;}
 	return pow(base, 1 / root);
 };
 // Alias to Math.sqrt() for convenience
 Calc.sqrt = sqrt;
-// Take the base-n logarithm of a number (the default is base-10)
+// Take the base-n logarithm of a number
 Calc.log = function(num, base) {
-	if (base === UNDEFINED) {base = 10;}
+	// Base defaults to 10
+	if (base === UNDEFINED) {
+		base = 10;
+	}
 	return log(num) / log(base);
 };
 // Take the natural logarithm of a number
@@ -153,7 +153,7 @@ Calc.thru = function(start, end, step) {
 	}
 	
 	// Handle ranges in both directions
-	for (i=start; i!==end; i+=step) {
+	for (i = start; i !== end; i += step) {
 		arr.push(i);
 	}
 	return arr;
@@ -161,17 +161,17 @@ Calc.thru = function(start, end, step) {
 // Calculate the sum of all numbers in an array
 Calc.sum = function(arr) {
 	var sum = 0, i;
-	for (i=0; i<arr.length; i+=1) {
+	for (i = 0; i < arr.length; i +=1) {
 		sum += arr[i];
 	}
 	return sum;
 };
 // Calculate the summation of a through b (optionally using a callback function)
-Calc.summation = Calc.summate = Calc.sigma = function(a, b, fn) {
+Calc.summation = Calc.sigma = function(a, b, fn) {
 	var sum = 0, i;
 	if (fn !== UNDEFINED) {
 		// If function is defined, get sum of series
-		for (i=a; i<=b; i+=1) {
+		for (i = a; i <= b; i += 1) {
 			sum += fn(i);
 		}
 	} else {
@@ -180,10 +180,22 @@ Calc.summation = Calc.summate = Calc.sigma = function(a, b, fn) {
 	}
 	return sum;
 };
+// Approximate the Riemann sum of a function
+Calc.riemann = function(fn, a, b) {
+	var sum = 0,
+		n = 1e5,
+		dx = (b - a) / n,
+		i;
+	// Add up areas of all computed rectangles
+	for (i = 1; i < n; i +=1) {
+		sum += fn(a + (dx * i)) * dx;
+	}
+	return sum;
+};
 // Calculate the product of all numbers in an array
 Calc.product = Calc.prod = function(arr) {
 	var prod = 1, i;
-	for (i=0; i<arr.length; i+=1) {
+	for (i = 0; i < arr.length; i +=1) {
 		prod *= arr[i];
 	}
 	return prod;
@@ -194,7 +206,7 @@ Calc.mean = Calc.avg = function(arr) {
 };
 // Calculate the geometric mean of all numbers in an array
 Calc.geoMean = function(arr) {
-	return pow(Calc.product(arr), 1 / arr.length);
+	return pow(Calc.product(arr), (1 / arr.length));
 };
 // Calculate the median (middle value) of an array
 Calc.median = function(arr) {
@@ -217,7 +229,7 @@ Calc.modes = Calc.mode = function(arr) {
 		modes = [],
 		maxCount = 1,
 		num, i;
-	for (i=0; i<arr.length; i+=1) {
+	for (i = 0; i < arr.length; i +=1) {
 		num = arr[i];
 		if (map[num] === UNDEFINED) {
 			map[num] = 1;
@@ -243,17 +255,16 @@ Calc.variance = function(arr, pop) {
 	var n = arr.length,
 		mean = Calc.mean(arr),
 		top = 0,
+		bottom = n - 1,
 		inside, i;
-	for (i=0; i<arr.length; i+=1) {
+	for (i = 0; i < arr.length; i +=1) {
 		top += pow(arr[i] - mean, 2);
 	}
 	// If population is chosen
 	if (pop) {
-		inside = top / n;
-	} else {
-		inside = top / (n - 1);
+		bottom = n;
 	}
-	return inside;
+	return (top / bottom);
 };
 // Calculate the sample standard deviation of all numbers in an array
 // Pass in true as a 2nd argument to calculate population stdDev
@@ -309,11 +320,11 @@ Calc.sorted = Calc.sort = function(arr, fn) {
 	arr = arr.slice(0);
 	if (fn && fn.call) {
 		arr.sort(function(a, b) {
-			return fn(a) - fn(b);
+			return fn(a) > fn(b);
 		});
 	} else {
 		arr.sort(function(a, b) {
-			return a - b;
+			return a > b;
 		});
 	}
 	return arr;
@@ -326,7 +337,7 @@ Calc.filtered = Calc.filter = function(arr, fn) {
 		filtered = arr.filter(fn);
 	} else {
 		filtered = [];
-		for (i=0; i<arr.length; i+=1) {
+		for (i = 0; i < arr.length; i +=1) {
 			if (fn.call(arr, arr[i], i, arr)) {
 				filtered.push(arr[i]);
 			}
@@ -342,7 +353,7 @@ Calc.map = function(arr, fn) {
 		mapped = arr.map(fn);
 	} else {
 		mapped = [];
-		for (i=0; i<arr.length; i+=1) {
+		for (i = 0; i < arr.length; i +=1) {
 			mapped.push(fn.call(arr, arr[i], i, arr));
 		}
 	}
@@ -356,7 +367,7 @@ Calc.index = function(arr, item) {
 		index = arr.indexOf(item);
 	} else {
 		index = -1;
-		for (i=0; i<arr.length; i+=1) {
+		for (i = 0; i < arr.length; i +=1) {
 			if (arr[i] === item) {
 				index = i;
 				break;
@@ -380,6 +391,7 @@ Calc.reversed = Calc.reverse = function(arr) {
 		arr = arr.split('');
 	}
 	arr = arr.slice(0).reverse();
+	// Return a string if a string was given            
 	if (arr.join) {
 		arr = arr.join('');
 	}
@@ -388,11 +400,10 @@ Calc.reversed = Calc.reverse = function(arr) {
 
 // Flatten an array (reduce its hierarchy to one level)
 Calc.flattened = Calc.flatten = function flatten(arr) {
-
 	var flattened = [], i;
 	
-	for (i=0; i<arr.length; i+=1) {
-				
+	for (i = 0; i < arr.length; i +=1) {
+		
 		if (({}).toString.call(arr[i]).indexOf('Array') !== -1) {
 			// Recursively flatten nested arrays
 			flattened = flattened.concat(flatten(arr[i]));
@@ -405,6 +416,44 @@ Calc.flattened = Calc.flatten = function flatten(arr) {
 	return flattened;
 };
 
+// Split the array into groups of n elements each
+Calc.groups = Calc.grouped = function(arr, n) {
+	var groups = [[]],
+		remaining, i;
+	
+	// Convert the given string to an array if necessary
+	if (typeof arr === 'string') {
+		arr = arr.split('');
+	}
+	if (n === UNDEFINED) {
+		n = 1;
+	} else if (n === 0) {
+		// Return empty array if n is zero
+		return [];
+	}
+	
+	for (i = 0; i < arr.length; i +=1) {
+		
+		if (groups[groups.length-1].length === n) {
+			// Create new group if last group is large enough
+			groups.push([]);
+		}
+		groups[groups.length-1].push(arr[i]);
+		
+	}
+	
+	// Check if there are still slots to fill
+	if (groups[groups.length-1].length !== n) {
+		// Calculate remaining number slots to fill
+		remaining = n - groups[groups.length-1].length;
+		for (i = 0; i < remaining; i +=1) {
+			groups[groups.length-1].push(NULL);
+		}
+	}
+	
+	return groups;
+};
+
 /* Combinatorics module */
 
 // Compute the factorial of an integer
@@ -413,7 +462,7 @@ Calc.factorial = function(num) {
 	if (num === 0) {
 		factorial = 1;
 	} else if (num % 1 === 0) {
-		for (i=1; i<num; i+=1) {
+		for (i = 1; i < num; i +=1) {
 			factorial *= i;
 		}
 	} else {
@@ -434,7 +483,7 @@ Calc.nCr = function(n, r) {
 
 // Calculate all possible permutations of elements in an array
 Calc.perms = Calc.permute = function(arr, n) {
-	var iArr, perms, perm;
+	var arrIndices, perms, perm;
 
 	// Array of calculated permutations
 	perms = [];
@@ -449,32 +498,40 @@ Calc.perms = Calc.permute = function(arr, n) {
 		arr = arr.split('');
 	}
 
-	// Create array of indices from input array
-	iArr = Calc.map(arr, function(v, k) {
+	// Filter callback
+	function filterCallback(v, k) {
 		return k;
-	});
+	}
+	// Create array of indices from input array
+	arrIndices = Calc.map(arr, filterCallback);
 
 	// Internal permute function
 	function _permute(permIndices) {
-		var items, i;
+		var items, i,
+			mapCallback,
+			filterCallback;
 
 		// If permutation reaches the given length, use it
 		if (permIndices.length === n) {
 			
-			// Convert array of indices to array of items
-			perm = Calc.map(permIndices, function(v, k) {
+			// Map callback
+			mapCallback = function(v, k) {
 				return arr[v];
-			});
+			};
+			// Convert array of indices to array of items
+			perm = Calc.map(permIndices, mapCallback);
 			
 			// Add permutation to list of permutations
 			perms.push(perm);
 			
 		} else {
 			
-			// Construct list of items that are not currently used
-			items = Calc.filtered(iArr, function(v, k) {
+			// Filter callback
+			filterCallback = function(v, k) {
 				return (Calc.index(permIndices, v) === -1);
-			});
+			};
+			// Construct list of items that are not currently used
+			items = Calc.filtered(arrIndices, filterCallback);
 			
 			for(i=0; i<items.length; i+=1) {
 				_permute(permIndices.concat(items[i]));
@@ -667,6 +724,7 @@ Calc.polar = function(pt) {
 
 // Find quadrant fron a given angle or point
 Calc.quadrant = function(angle) {
+	// Calculate quadrant using coterminal angle
 	var quadrant = ceil((Calc.coterminal(angle) / (2*PI)) * 4);
 	// Quadrant cannot be zero
 	if (quadrant === 0) {
@@ -697,7 +755,7 @@ Calc.factors = function(arr) {
 	}
 	
 	// Keep only positive numbers
-	for (i=0; i<arr.length; i+=1) {
+	for (i = 0; i < arr.length; i +=1) {
 		if (arr[i]) {
 			arr[i] = abs(arr[i]);
 		} else {
@@ -712,9 +770,9 @@ Calc.factors = function(arr) {
 		min = Calc.min(arr);
 			
 		// Loop through all possible factors
-		for (f=2; f<=min; f+=1) {
+		for (f = 2; f < min; f +=1) {
 			common = TRUE;
-			for (i=0; i<arr.length; i+=1) {
+			for (i = 0; i < arr.length; i +=1) {
 				// If number does not divide evenly, it is not a factor
 				if (arr[i] % f !== 0) {
 					// If factor is not a common factor, don't check factor against other numbers
@@ -742,9 +800,9 @@ Calc.lcm = Calc.lcd = function(arr) {
 	prod = Calc.product(arr);
 	
 	// Loop through possible multiples
-	for (m=1; m<=prod; m+=1) {
+	for (m = 1; m < prod; m +=1) {
 		common = TRUE;
-		for (i=0; i<arr.length; i+=1) {
+		for (i = 0; i < arr.length; i +=1) {
 			// If number is not a multiple, it is not an LCM
 			if (m % arr[i] !== 0) {
 				// If number is not an LCM, don't check number against other numbers
@@ -762,7 +820,20 @@ Calc.lcm = Calc.lcd = function(arr) {
 
 // Calculate the nth Fibonacci number
 Calc.fib = function(n) {
-	return round(pow(Calc.PHI, n) / sqrt(5));
+	var a, b, i, last;
+	a = 0;
+	b = 1;
+	
+	if (n === 0) {
+		b = 0;
+	} else {
+		for (i = 0; i < (n - 1); i +=1) {
+			last = b;
+			b = a + b;
+			a = last;
+		}
+	}
+	return b;
 };
 // Calculate the nth prime number
 Calc.prime = function(n) {
@@ -771,7 +842,7 @@ Calc.prime = function(n) {
 		prime,
 		isPrime;
 		
-	for (i=0; p<=n; i+=1) {
+	for (i = 0; p <= n; i += 1) {
 		isPrime = Calc.isPrime(i);
 		if (isPrime) {
 			prime = i;
@@ -786,10 +857,10 @@ Calc.prime = function(n) {
 // Convert to fraction
 Calc.fraction = Calc.frac = function(num) {
 	var epsilon = 1e-12,
-		numerator, absNum, i;
+		numerator, absNum, d;
 		
 	// Cap number of operations at 50,000 for the sake of performance
-	for (d=1; d<5e4; d+=1) {
+	for (d = 1; d < 5e4; d +=1) {
 		numerator = num * d;
 		absNum = abs(numerator);
 		// Check if the proposed numerator is close enough to an integer
@@ -829,7 +900,7 @@ Calc.radical = function(num) {
 		ans = [root, 1];
 	} else {
 		// Loop through possible factors
-		for (f=2; f<num; f+=1) {
+		for (f = 2; f < num; f +=1) {
 			factor = num / f;
 			// If number is a factor
 			if (factor % 1 === 0) {
@@ -860,6 +931,9 @@ Calc.radicalf = function(num) {
 		.replace(/√\-/gi, 'i√')
 		// x√1 is just x
 		.replace(/√1$/gi, '');
+	if (rad === '') {
+		rad = '1';
+	}
 	return rad;
 };
 
@@ -881,23 +955,29 @@ Calc.noCommas = function(str) {
 
 /* Condition module */
 
+// Test if a number is even
 Calc.isEven = function(num) {
 	return (num % 2 === 0);
 };
+// Test if a number is odd
 Calc.isOdd = function(num) {
 	return (abs(num) % 2 === 1);
 };
+// Test if a number is an integer
 Calc.isInteger = function(num) {
 	return (num % 1 === 0);
 };
+// Test if a number is prime
 Calc.isPrime = function(num) {
 	var factors = Calc.factors(num);
 	return (factors.length === 2);
 };
+// Test if a number is composite
 Calc.isComposite = function(num) {
 	num = abs(num);
 	return (Calc.factors(num).length > 2);
 };
+// Test if a number is a factor of another number
 Calc.isFactor = Calc.isFactorOf = function(factor, num) {
 	return (num % factor === 0);
 };
@@ -921,7 +1001,7 @@ Calc.isFib = function(num) {
 
 /* Random Module */
 
-// Get random number or array index
+// Get a random number or a random array index
 Calc.rand = Calc.random = function(a, b) {
 	if (a === UNDEFINED && b === UNDEFINED) {
 		a = 0;
@@ -937,29 +1017,30 @@ Calc.rand = Calc.random = function(a, b) {
 	return a + (b - a) * random();
 };
 
-// Get random integer
+// Get a random integer
 Calc.randInt = function(a, b) {
 	return round(Calc.rand(a, b));
+};
+
+// Get a random selection of n items from an array
+Calc.randChoices = function(arr, n) {
+	return Calc.scramble(arr).slice(0, n || 1);
+};
+// Get a random number from an array
+Calc.randChoice = Calc.choice = function(arr) {
+	return arr[Calc.random(arr)];
 };
 
 // Scramble an array of numbers
 Calc.scrambled = Calc.scramble = function(arr) {
 	var item, i;
 	arr = arr.slice(0);
-	for (i=0; i<arr.length; i+=1) {
+	for (i = 0; i < arr.length; i +=1) {
 		item = arr[i];
 		arr.splice(i, 1);
 		arr.splice(Calc.random(arr), 0, item);
 	}
 	return arr;
-};
-// Get a random selection of n items from an array
-Calc.choices = function(arr, n) {
-	return Calc.scramble(arr).slice(0, n || 1);
-};
-// Get a random number from an array
-Calc.choice = function(arr) {
-	return Calc.scramble(arr)[0];
 };
 
 /* Base module */
@@ -1034,7 +1115,7 @@ function _row(m1, r) {
 }
 function _col(m1, c) {
 	var arr = [], r;
-	for (r=0; r<m1.length; r+=1) {
+	for (r = 0; r < m1.length; r +=1) {
 		arr.push(m1[r][c]);
 	}
 	return arr;
@@ -1053,9 +1134,9 @@ function _crossout(m1, pt) {
 	var r, c;
 	m1 = m1.slice(0);
 	m1.splice(pt[0], 1);
-	for (r=0; r<m1.length; r+=1) {
+	for (r = 0; r < m1.length; r +=1) {
 		m1[r] = m1[r].slice(0);
-		for (c=0; c<m1[r].length; c+=1) {
+		for (c = 0; c < m1[r].length; c +=1) {
 			if (c === pt[1]) {
 				m1[r].splice(c, 1);
 			}
@@ -1071,7 +1152,7 @@ function _det(m1) {
 		cols = _cols(m1),
 		sub,
 		ans = 0, c;
-		for (c=0; c<cols; c+=1) {
+		for (c = 0; c < cols; c +=1) {
 			sub = _crossout(m1.slice(0), [0, c]);
 			// Calculate determinant and add onto answer
 			ans += (top[c] * sign) * Calc.matrix(sub).det();
@@ -1084,8 +1165,8 @@ function _det(m1) {
 matrix.scale = function(scalar) {
 	var m1 = this.matrix.slice(0),
 		r, c;
-	for (r=0; r<m1.length; r+=1) {
-		for (c=0; c<m1[r].length; c+=1) {
+	for (r = 0; r < m1.length; r +=1) {
+		for (c = 0; c < m1[r].length; c +=1) {
 			m1[r][c] *= scalar;
 		}
 	}
@@ -1117,8 +1198,8 @@ matrix.index = function(value) {
 		rows = _rows(m1),
 		cols = _cols(m1),
 		r, c;
-	for (r=0; r<rows; r+=1) {
-		for (c=0; c<cols; c+=1) {
+	for (r = 0; r < rows; r +=1) {
+		for (c = 0; c < cols; c +=1) {
 			if (m1[r][c] === value) {
 				return (r * cols) + c;
 			}
@@ -1149,9 +1230,9 @@ matrix.add = function(m2) {
 	if (m1.length !== m2.length || m1[0].length !== m2[0].length) {
 		return NULL;
 	}
-	for (r=0; r<m1.length; r+=1) {
+	for (r = 0; r < m1.length; r +=1) {
 		ans[r] = [];
-		for (c=0; c<m1[r].length; c+=1) {
+		for (c = 0; c < m1[r].length; c +=1) {
 			ans[r][c] = (m1[r][c] + m2[r][c]);
 		}
 	}
@@ -1177,15 +1258,15 @@ matrix.multiply = function(m2) {
 		return NULL;
 	}
 	// Loop through resultant rows
-	for (r=0; r<rows; r+=1) {
+	for (r = 0; r < rows; r +=1) {
 		ans[r] = [];
 		// Loop through resultant's columns
-		for (c=0; c<cols; c+=1) {
+		for (c = 0; c < cols; c +=1) {
 			n = 0;
 			// Match up row from matrix 1 with column from matrix 2
 			row = _row(m1, r);
 			col = _col(m2, c);
-			for (rr=0; rr<row.length; rr+=1) {
+			for (rr = 0; rr < row.length; rr +=1) {
 				n += (row[rr] * col[rr]);
 			}
 			ans[r][c] = n;
@@ -1216,9 +1297,9 @@ matrix.transpose = matrix.reflect = function() {
 		rows = _rows(m1),
 		cols = _cols(m1),
 		reflected = [], r, c;
-	for (c=0; c<cols; c+=1) {
+	for (c = 0; c < cols; c +=1) {
 		reflected[c] = [];
-		for (r=0; r<rows; r+=1) {
+		for (r = 0; r < rows; r +=1) {
 			reflected[c][r] = m1[r][c];
 		}
 	}
@@ -1235,10 +1316,10 @@ matrix.cofactors = function() {
 		sub, r, c;
 	m1 = m1.slice(0);
 
-	for (r=0; r<rows; r+=1) {
+	for (r = 0; r < rows; r +=1) {
 		csign = rsign;
 		factors[r] = [];
-		for (c=0; c<cols; c+=1) {
+		for (c = 0; c < cols; c +=1) {
 			sub = _crossout(m1, [r, c]);
 			factors[r].push(Calc.matrix(sub).det() * csign);
 			csign *= -1;
@@ -1283,9 +1364,9 @@ matrix.identity = matrix.iden = function() {
 		d = 0,
 		value;
 		
-	for (r=0; r<cols; r+=1) {
+	for (r = 0; r < cols; r +=1) {
 		iden[r] = [];
-		for (c=0; c<cols; c+=1) {
+		for (c = 0; c < cols; c +=1) {
 			if (c === d) {
 				// If cell is on the diagonal, give it a value of one
 				value = 1;
