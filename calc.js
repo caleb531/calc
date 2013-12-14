@@ -5,11 +5,15 @@
  */
 (function(self, Math, parseFloat, parseInt, String, TRUE, FALSE, NULL, UNDEFINED) {
 
-// Calc object
-var Calc = {},
+var
+	// Calc object
+	Calc = {},
+	
+	// Map over the current global Calc in case of overwrite
 	_Calc = self.Calc,
+	
+	// Aliases to Math methods
 	abs = Math.abs,
-	// Set variables (used as aliases)
 	round = Math.round,
 	floor = Math.floor,
 	ceil = Math.ceil,
@@ -20,8 +24,11 @@ var Calc = {},
 	random = Math.random,
 	PI = Math.PI,
 	E = Math.E,
-	matrix, vector;
 	
+	// Object types created by Calc
+	matrix, vector;
+
+// Export Calc to window
 self.Calc = Calc;
 
 // Calc constants
@@ -30,13 +37,15 @@ Calc.E = E;
 Calc.PHI = (1 + sqrt(5)) / 2;
 Calc.G = 6.673848e-11;
 
-// Prevent naming conflicts
+// Prevent naming conflicts. Restores the previous "Calc"
+// global variable (possibly owned by another program)
 Calc.noConflict = function() {
 	if (self.Calc === Calc) {
 		self.Calc = _Calc;
 	}
 	return Calc;
 };
+
 
 /* Number module */
 
@@ -94,16 +103,21 @@ Calc.correct = function(num) {
 	return num;
 };
 
+
 /* Exponent module */
 
 // Raise number to a power
 Calc.pow = pow;
+
 // Get the nth root of a number
+// TODO: Correct rounding error?
 Calc.root = function(base, root) {
 	return pow(base, 1 / root);
 };
+
 // Alias to Math.sqrt() for convenience
 Calc.sqrt = sqrt;
+
 // Take the base-n logarithm of a number
 Calc.log = function(num, base) {
 	// Base defaults to 10
@@ -112,10 +126,13 @@ Calc.log = function(num, base) {
 	}
 	return log(num) / log(base);
 };
+
 // Take the natural logarithm of a number
 Calc.ln = log;
+
 // Raise the constant e to a power
 Calc.exp = exp;
+
 
 /* Statistics module */
 
@@ -123,14 +140,17 @@ Calc.exp = exp;
 Calc.min = function(arr) {
 	return Math.min.apply(Math, arr);
 };
+
 // Find the largest value in an array
 Calc.max = function(arr) {
 	return Math.max.apply(Math, arr);
 };
+
 // Get the range of an array of numbers (highest - lowest)
 Calc.range = function(arr) {
 	return Calc.max(arr) - Calc.min(arr);
 };
+
 // Generate an array of numbers through a certain range
 // This method is equivalent to the range() function in other languages
 Calc.thru = function(start, end, step) {
@@ -156,6 +176,7 @@ Calc.thru = function(start, end, step) {
 	}
 	return arr;
 };
+
 // Calculate the sum of all numbers in an array
 Calc.sum = function(arr) {
 	var sum = 0, i, length;
@@ -164,6 +185,7 @@ Calc.sum = function(arr) {
 	}
 	return sum;
 };
+
 // Calculate the summation of a through b (optionally using a callback function)
 Calc.summation = Calc.sigma = function(a, b, fn) {
 	var sum = 0, i;
@@ -178,6 +200,7 @@ Calc.summation = Calc.sigma = function(a, b, fn) {
 	}
 	return sum;
 };
+
 // Approximate the Riemann sum of a function
 Calc.riemann = function(fn, a, b) {
 	var sum = 0,
@@ -190,6 +213,7 @@ Calc.riemann = function(fn, a, b) {
 	}
 	return sum;
 };
+
 // Calculate the product of all numbers in an array
 Calc.product = Calc.prod = function(arr) {
 	var prod = 1, i, len;
@@ -198,14 +222,17 @@ Calc.product = Calc.prod = function(arr) {
 	}
 	return prod;
 };
+
 // Calculate the arithmetic mean of all numbers in an array
 Calc.mean = Calc.avg = function(arr) {
 	return Calc.sum(arr) / arr.length;
 };
+
 // Calculate the geometric mean of all numbers in an array
 Calc.geoMean = function(arr) {
 	return pow(Calc.product(arr), (1 / arr.length));
 };
+
 // Calculate the median (middle value) of an array
 Calc.median = function(arr) {
 	var med, m1, m2, len;
@@ -222,6 +249,7 @@ Calc.median = function(arr) {
 	}
 	return med;
 };
+
 // Calculate the modes (most-recurring numbers) of an array
 Calc.modes = Calc.mode = function(arr) {
 	var map = [],
@@ -248,6 +276,7 @@ Calc.modes = Calc.mode = function(arr) {
 	}
 	return modes;
 };
+
 // Calculate the sample variance of all numbers in an array
 // Pass in true as a 2nd argument to calculate population variance
 Calc.variance = function(arr, pop) {
@@ -265,11 +294,13 @@ Calc.variance = function(arr, pop) {
 	}
 	return (top / bottom);
 };
+
 // Calculate the sample standard deviation of all numbers in an array
 // Pass in true as a 2nd argument to calculate population stdDev
 Calc.stdDev = function(arr, pop) {
 	return sqrt(Calc.variance(arr, pop));
 };
+
 
 /* Geometry module */
 
@@ -279,6 +310,7 @@ Calc.slope = function(pt1, pt2) {
 	if (slope === Infinity) {slope = NULL;}
 	return slope;
 };
+
 // Calculate the distance of the two given points
 Calc.distance = Calc.dist = function(pt1, pt2) {
 	pt1 = pt1.slice(0);
@@ -289,6 +321,7 @@ Calc.distance = Calc.dist = function(pt1, pt2) {
 	
 	return sqrt(pow(pt2[0] - pt1[0], 2) + pow(pt2[1] - pt1[1], 2) + pow(pt2[2] - pt1[2], 2));
 };
+
 // Calculate the midpoint of the line created by two given points
 Calc.midpoint = Calc.midpt = function(pt1, pt2) {
 	pt1 = pt1.slice(0);
@@ -303,14 +336,19 @@ Calc.midpoint = Calc.midpt = function(pt1, pt2) {
 		(pt1[2] + pt2[2]) / 2
 	];
 };
+
 // Calculate the hypotenuse of a and b
+// CONSIDER: .hypotenuse alias
 Calc.hypot = function(a, b) {
 	return sqrt(pow(a, 2) + pow(b, 2));
 };
+
 // Calculate the difference of two squares
+// CONSIDER: .squareDifference or .differenceOfSquares alias
 Calc.sqDiff = function(a, b) {
 	return pow(a, 2) - pow(b, 2);
 };
+
 
 /* Array module */
 
@@ -360,6 +398,7 @@ Calc.map = function(arr, fn) {
 };
 
 // Get the index of an item in an array
+// CONSIDER: .indexOf alias
 Calc.index = function(arr, item, fromIndex) {
 	var index, i, length;
 	if (arr.indexOf) {
@@ -457,6 +496,7 @@ Calc.groups = Calc.grouped = function(arr, n) {
 	return groups;
 };
 
+
 /* Combinatorics module */
 
 // Compute the factorial of an integer
@@ -474,6 +514,7 @@ Calc.factorial = function(num) {
 	}
 	return factorial;
 };
+
 // Calculate the number of permutations from a set of r elements in a total of n elements
 Calc.nPr = function(n, r) {
 	if (n < r) {
@@ -481,6 +522,7 @@ Calc.nPr = function(n, r) {
 	}
 	return Calc.factorial(n) / Calc.factorial(n - r);
 };
+
 // Calculate the number of combinations from a set of r elements in a total of n elements
 Calc.nCr = function(n, r) {
 	if (n < r) {
@@ -550,6 +592,7 @@ Calc.permuations = Calc.perms = Calc.permute = function(arr, n) {
     _permute([]);
     return perms;
 };
+
 
 /* Trigonometry module */
 
@@ -704,6 +747,7 @@ Calc.acoth = function(num) {
 	return Calc.atanh(1 / num);
 };
 
+
 /* Coordinate module */
 
 // Find coterminal angle between 0 and 2pi (360 degrees)
@@ -745,6 +789,7 @@ Calc.quadrant = function(angle) {
 Calc.refAngle = function(angle) {
 	return abs(Calc.nearest(angle, PI) - angle);
 };
+
 
 /* Factor module */
 
@@ -796,6 +841,7 @@ Calc.factors = function(arr) {
 	}
 	return factors;
 };
+
 // Get greatest common factor
 Calc.gcf = Calc.gcd = function(arr) {
 	var factors = Calc.factors(arr);
@@ -843,6 +889,7 @@ Calc.fib = function(n) {
 	}
 	return b;
 };
+
 // Calculate the nth prime number
 Calc.prime = function(n) {
 	var i = 0,
@@ -859,6 +906,7 @@ Calc.prime = function(n) {
 	}
 	return prime;
 };
+
 
 /* Representation module */
 
@@ -961,34 +1009,41 @@ Calc.noCommas = function(str) {
 	return parseFloat(str);
 };
 
+
 /* Condition module */
 
 // Test if a number is even
 Calc.isEven = function(num) {
 	return (num % 2 === 0);
 };
+
 // Test if a number is odd
 Calc.isOdd = function(num) {
 	return (abs(num) % 2 === 1);
 };
+
 // Test if a number is an integer
 Calc.isInteger = function(num) {
 	return (num % 1 === 0);
 };
+
 // Test if a number is prime
 Calc.isPrime = function(num) {
 	var factors = Calc.factors(num);
 	return (factors.length === 2);
 };
+
 // Test if a number is composite
 Calc.isComposite = function(num) {
 	num = abs(num);
 	return (Calc.factors(num).length > 2);
 };
+
 // Test if a number is a factor of another number
 Calc.isFactor = Calc.isFactorOf = function(factor, num) {
 	return (num % factor === 0);
 };
+
 // If number is in Fibonacci sequence
 Calc.isFib = function(num) {
 	var ans, a, b;
@@ -1006,6 +1061,7 @@ Calc.isFib = function(num) {
 	}
 	return ans;
 };
+
 
 /* Random Module */
 
@@ -1035,6 +1091,7 @@ Calc.randInt = function(a, b) {
 Calc.randChoices = function(arr, n) {
 	return Calc.scramble(arr).slice(0, n || 1);
 };
+
 // Get a random number from an array
 Calc.randChoice = Calc.choice = function(arr) {
 	return arr[Calc.random(arr)];
@@ -1051,6 +1108,7 @@ Calc.scrambled = Calc.scramble = function(arr) {
 	}
 	return arr;
 };
+
 
 /* Base module */
 
@@ -1074,6 +1132,7 @@ Calc.octal = Calc.oct = function(num) {
 Calc.hex = function(num) {
 	return num.toString(16);
 };
+
 
 /* Boolean module */
 
@@ -1102,6 +1161,7 @@ Calc.nor = function(bool1, bool2) {
 	return !(!!bool1 || !!bool2);
 };
 
+
 /* Matrix module */
 
 // Matrix constructor
@@ -1129,6 +1189,7 @@ function _col(m1, c) {
 	}
 	return arr;
 }
+
 // Get number of rows/columns
 function _rows(m1) {
 	return m1.length;
@@ -1190,10 +1251,12 @@ matrix.scale = function(scalar) {
 matrix.row = function(r) {
 	return _row(this.matrix, r);
 };
+
 // Get the nth column
 matrix.col = function(c) {
 	return _col(this.matrix, c);
 };
+
 // Get the nth element
 matrix.value = function(index) {
 	var m1 = this.matrix,
@@ -1203,6 +1266,7 @@ matrix.value = function(index) {
 
 	return (m1[row] ? m1[row][col] : UNDEFINED);
 };
+
 // Get the index of the first element with the given value
 matrix.index = function(value) {
 	var m1 = this.matrix,
@@ -1218,14 +1282,17 @@ matrix.index = function(value) {
 	}
 	return NULL;
 };
+
 // Count number of rows
 matrix.nrows = matrix.rows = function() {
 	return _rows(this.matrix);
 };
+
 // Count number of columns
 matrix.ncols = matrix.cols = function() {
 	return _cols(this.matrix);
 };
+
 // Count number of elements
 matrix.nvalues = matrix.values = function() {
 	var m1 = this.matrix;
@@ -1393,6 +1460,7 @@ matrix.identity = matrix.iden = function() {
 	return Calc.matrix(iden);
 };
 
+
 /* Vector module */
 
 // Vector constructor
@@ -1417,10 +1485,12 @@ vector.mag = function() {
 	var v1 = this.vector;
 	return sqrt(pow(v1[0], 2) + pow(v1[1], 2) + pow(v1[2], 2));
 };
+
 // Angle (direction) of vector
 vector.angle = function() {
 	return Calc.polar(this.vector)[1];
 };
+
 // Scale a vector
 vector.scale = function(scalar) {
 	var v1 = this.vector.slice(0);
@@ -1429,6 +1499,7 @@ vector.scale = function(scalar) {
 	v1[2] *= scalar;
 	return Calc.vector(v1);
 };
+
 // Sum of two vectors
 vector.add = function(v2) {
 	var v1 = this.vector;
@@ -1439,16 +1510,19 @@ vector.add = function(v2) {
 		v1[2] + v2[2]
 	]);
 };
+
 // Difference of two vectors
 vector.subtract = function(v2) {
 	return this.add(Calc.vector(v2).scale(-1));
 };
+
 // Dot product of two vectors
 vector.dot = function(v2) {
 	var v1 = this.vector;
 	v2 = Calc.vector(v2).vector;
 	return (v1[0] * v2[0]) + (v1[1] * v2[1]);
 };
+
 // Cross product of two 3D vectors
 vector.cross = function(v2) {
 	var v1 = this.vector;
@@ -1462,6 +1536,9 @@ vector.cross = function(v2) {
 		(v1[0] * v2[1]) - (v1[1] * v2[0])
 	]);
 };
+
+
+/* Set module */
 
 // Set constructor
 function Set(s1) {
