@@ -378,7 +378,6 @@ Calc.index = function(arr, item, fromIndex) {
 };
 
 // Remove duplicates from an array
-// FIRST index
 Calc.unique = function(arr) {
 	return Calc.filtered(arr, function(value, key) {
 		return (Calc.index(arr, value) === key);
