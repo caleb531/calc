@@ -1,5 +1,5 @@
-/** @license
- * Calc
+/**
+ * @license Calc
  * Copyright 2013, Caleb Evans
  * Licensed under the MIT license
  */
