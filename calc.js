@@ -30,8 +30,6 @@ Calc.E = E;
 Calc.PHI = (1 + sqrt(5)) / 2;
 Calc.G = 6.673848e-11;
 
-/* Chaining module */
-
 // Prevent naming conflicts
 Calc.noConflict = function() {
 	if (self.Calc === Calc) {
