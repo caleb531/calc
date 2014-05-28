@@ -84,25 +84,14 @@ Calc.sign = function(num) {
 	return sign;
 };
 
-// Bring a number closer to zero by a given amount
-Calc.toZero = function(num, inc) {
-	return num - (Calc.sign(num) * inc);
-};
-
 // Correct a number's binary rounding error
 Calc.correct = function(num) {
-	var str = String(num),
-		parts = str.split('.');
-	
-	// Do not correct numbers in scientific notation
-	if (parts[0].match('e') === NULL && parts[1]) {
-		// Replace mismatching digits with repeating digit
-		parts[1] = parts[1].replace(/(\d)(\1{10})(\d{1,2})$/, '$1$2$2');
-		num = parseFloat(parts.join('.'));
+	if (String(num).indexOf('e') === -1 && Calc.round(num, 14) === Calc.round(num, 13)) {
+		return Calc.round(num, 14);
+	} else {
+		return num;
 	}
-	return num;
 };
-
 
 /* Exponent module */
 
