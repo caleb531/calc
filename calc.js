@@ -8,10 +8,10 @@
 var
 	// Calc object
 	Calc = {},
-	
+
 	// Map over the current global Calc in case of overwrite
 	_Calc = self.Calc,
-	
+
 	// Aliases to Math methods
 	abs = Math.abs,
 	round = Math.round,
@@ -24,7 +24,7 @@ var
 	random = Math.random,
 	PI = Math.PI,
 	E = Math.E,
-	
+
 	// Object types created by Calc
 	matrix, vector;
 
@@ -144,31 +144,33 @@ Calc.range = function(arr) {
 // This method is equivalent to the range() function in other languages
 Calc.thru = function(start, end, step) {
 	var arr = [], i;
-	
+
 	// If no starting number is specified
 	if (end === UNDEFINED) {
 		end = start;
 		start = 0;
 	}
-	
+
 	// If step is 0 or undefined
 	if (!step) {step = 1;}
-	
+
 	// Prevent infinite loop if the start number is greater than the end number
-	if (start > end) {
-		step = -1;
+	if (step === -1) {
+		for (i = start; i >= end; i += step) {
+			arr.push(i);
+		}
+	} else {
+		for (i = start; i <= end; i += step) {
+			arr.push(i);
+		}
 	}
-	
-	// Handle ranges in both directions
-	for (i = start; i !== end; i += step) {
-		arr.push(i);
-	}
+
 	return arr;
 };
 
 // Calculate the sum of all numbers in an array
 Calc.sum = function(arr) {
-	var sum = 0, i, length;
+	var sum = 0, i, len;
 	for (i = 0, len = arr.length; i < len; i += 1) {
 		sum += arr[i];
 	}
@@ -269,12 +271,12 @@ Calc.modes = Calc.mode = function(arr) {
 // Calculate the sample variance of all numbers in an array
 // Pass in true as a 2nd argument to calculate population variance
 Calc.variance = function(arr, pop) {
-	var n = len = arr.length,
+	var n = arr.length,
 		mean = Calc.mean(arr),
 		top = 0,
 		bottom = n - 1,
 		i;
-	for (i = 0; i < len; i += 1) {
+	for (i = 0; i < n; i += 1) {
 		top += pow(arr[i] - mean, 2);
 	}
 	// If population is chosen
@@ -307,7 +309,7 @@ Calc.distance = Calc.dist = function(pt1, pt2) {
 	// Define z-value if omitted
 	pt1[2] = pt1[2] || 0;
 	pt2[2] = pt2[2] || 0;
-	
+
 	return sqrt(pow(pt2[0] - pt1[0], 2) + pow(pt2[1] - pt1[1], 2) + pow(pt2[2] - pt1[2], 2));
 };
 
@@ -318,7 +320,7 @@ Calc.midpoint = Calc.midpt = function(pt1, pt2) {
 	// Define z-value if omitted
 	pt1[2] = pt1[2] || 0;
 	pt2[2] = pt2[2] || 0;
-	
+
 	return [
 		(pt1[0] + pt2[0]) / 2,
 		(pt1[1] + pt2[1]) / 2,
@@ -389,7 +391,7 @@ Calc.map = function(arr, fn) {
 // Get the index of an item in an array
 // CONSIDER: .indexOf alias
 Calc.index = function(arr, item, fromIndex) {
-	var index, i, length;
+	var index, i, len;
 	if (arr.indexOf) {
 		index = arr.indexOf(item, fromIndex);
 	} else {
@@ -413,26 +415,26 @@ Calc.unique = function(arr) {
 };
 
 // Reverse the order of an array or string
-Calc.reversed = Calc.reverse = function(arr) {
-	// Convert string to array
-	if (arr.split) {
-		arr = arr.split('');
+Calc.reversed = Calc.reverse = function(operand) {
+	var reversedOperand;
+	if (operand.split) {
+		reversedOperand = operand.split('');
+		reversedOperand.reverse();
+		return reversedOperand.join('');
+	} else {
+		reversedOperand = operand.slice(0);
+		reversedOperand.reverse();
+		return reversedOperand;
 	}
-	arr = arr.slice(0).reverse();
-	// Return a string if a string was given            
-	if (arr.join) {
-		arr = arr.join('');
-	}
-	return arr;
 };
 
 // Flatten an array (reduce its hierarchy to one level)
 Calc.flattened = Calc.flatten = function flatten(arr) {
 	var flattened = [], i, len, toString;
-	
+
 	toString = Object.prototype.toString;
 	for (i = 0, len = arr.length; i < len; i += 1) {
-		
+
 		if (toString.call(arr[i]) === '[object Array]') {
 			// Recursively flatten nested arrays
 			flattened = flattened.concat(flatten(arr[i]));
@@ -440,7 +442,7 @@ Calc.flattened = Calc.flatten = function flatten(arr) {
 			// Simply append items that aren't nested
 			flattened.push(arr[i]);
 		}
-		
+
 	}
 	return flattened;
 };
@@ -449,7 +451,7 @@ Calc.flattened = Calc.flatten = function flatten(arr) {
 Calc.groups = Calc.grouped = function(arr, n) {
 	var groups = [[]],
 		remaining, i, len, lastGroup;
-	
+
 	// Convert the given string to an array if necessary
 	if (typeof arr === 'string') {
 		arr = arr.split('');
@@ -460,19 +462,19 @@ Calc.groups = Calc.grouped = function(arr, n) {
 		// Return empty array if n is zero
 		return [];
 	}
-	
+
 	lastGroup = groups[groups.length-1];
 	for (i = 0, len = arr.length; i < len; i += 1) {
-		
+
 		if (lastGroup.length === n) {
 			// Create new group if last group is large enough
 			groups.push([]);
 			lastGroup = groups[groups.length-1];
 		}
 		lastGroup.push(arr[i]);
-		
+
 	}
-	
+
 	// Check if there are still slots to fill
 	if (lastGroup.length !== n) {
 		// Calculate remaining number slots to fill
@@ -481,7 +483,7 @@ Calc.groups = Calc.grouped = function(arr, n) {
 			lastGroup.push(NULL); // REFACTOR?
 		}
 	}
-	
+
 	return groups;
 };
 
@@ -521,7 +523,7 @@ Calc.nCr = function(n, r) {
 };
 
 // Calculate all possible permutations of elements in an array
-Calc.permuations = Calc.perms = Calc.permute = function(arr, n) {
+Calc.permutations = Calc.perms = Calc.permute = function(arr, n) {
 	var arrIndices, perms, perm;
 
 	// Array of calculated permutations
@@ -552,31 +554,31 @@ Calc.permuations = Calc.perms = Calc.permute = function(arr, n) {
 
 		// If permutation reaches the given length, use it
 		if (permIndices.length === n) {
-			
+
 			// Map callback
-			mapCallback = function(v, k) {
+			mapCallback = function(v) {
 				return arr[v];
 			};
 			// Convert array of indices to array of items
 			perm = Calc.map(permIndices, mapCallback);
-			
+
 			// Add permutation to list of permutations
 			perms.push(perm);
-			
+
 		} else {
-			
+
 			// Filter callback
-			filterCallback = function(v, k) {
+			filterCallback = function(v) {
 				return (Calc.index(permIndices, v) === -1);
 			};
 			// Construct list of items that are not currently used
 			items = Calc.filtered(arrIndices, filterCallback);
-			
+
 			for(i=0; i<items.length; i+= 1) {
 				_permute(permIndices.concat(items[i]));
 			}
 		}
-    
+
     }
     _permute([]);
     return perms;
@@ -605,7 +607,7 @@ Calc.radiansf = function(angle) {
 	if (frac[0] % 1 !== 0 && frac[0] === 1) {
 		return frac[0] + 'π';
 	}
-	
+
 	// Format fraction in terms of pi
 	frac = frac
 		.join('/')
@@ -618,7 +620,7 @@ Calc.radiansf = function(angle) {
 		.replace(/\/1$/gi, '')
 		// Ensure 0pi is just 0
 		.replace(/^0π/gi, '0');
-			
+
 	return frac;
 };
 
@@ -787,7 +789,7 @@ Calc.factors = function(arr) {
 	var common, min,
 		factors = [1],
 		f, i, len;
-	
+
 	if (!arr.push) {
 		//If a number is given, wrap it in an array
 		arr = [arr];
@@ -795,22 +797,22 @@ Calc.factors = function(arr) {
 		// Clone array
 		arr = arr.slice(0);
 	}
-	
+
 	// Keep only positive numbers
 	for (i = 0, len = arr.length; i < len; i += 1) {
-		if (arr[i]) {
+		if (arr[i] !== 0) {
 			arr[i] = abs(arr[i]);
 		} else {
-			// Eliminate zeroes
 			arr.splice(i, 1);
 			i -= 1;
+			len -= 1;
 		}
 	}
-	
+
 	if (arr.length) {
-	
-		min = Calc.min(arr);
-			
+
+		min = Calc.max([Calc.min(arr), 2]);
+
 		// Loop through all possible factors
 		for (f = 2; f <= min; f += 1) {
 			common = TRUE;
@@ -826,7 +828,7 @@ Calc.factors = function(arr) {
 				factors.push(f);
 			}
 		}
-	
+
 	}
 	return factors;
 };
@@ -841,7 +843,7 @@ Calc.gcf = Calc.gcd = function(arr) {
 Calc.lcm = Calc.lcd = function(arr) {
 	var prod, lcm, common, m, i, len;
 	prod = Calc.product(arr);
-	
+
 	// Loop through possible multiples
 	for (m = 1; m < prod; m += 1) {
 		common = TRUE;
@@ -866,7 +868,7 @@ Calc.fib = function(n) {
 	var a, b, i, last;
 	a = 0;
 	b = 1;
-	
+
 	if (n === 0) {
 		b = 0;
 	} else {
@@ -885,7 +887,7 @@ Calc.prime = function(n) {
 		p = 0,
 		prime,
 		isPrime;
-		
+
 	for (i = 0; p <= n; i += 1) {
 		isPrime = Calc.isPrime(i);
 		if (isPrime) {
@@ -903,7 +905,7 @@ Calc.prime = function(n) {
 Calc.fraction = Calc.frac = function(num) {
 	var epsilon = 1e-12,
 		numerator, absNum, d;
-		
+
 	// Cap number of operations at 50,000 for the sake of performance
 	for (d = 1; d < 5e4; d += 1) {
 		numerator = num * d;
@@ -931,15 +933,15 @@ Calc.fractionf = Calc.fracf = function(num) {
 // Return the square root of a number as a simplified radical
 Calc.radical = function(num) {
 	var root, ans, factor, f, sign;
-	
+
 	// Capture sign of number to apply later
 	sign = Calc.sign(num);
 	num = abs(num);
-	
+
 	// Calculate square root
 	root = sqrt(num);
 	ans = [1, num];
-	
+
 	if (root % 1 === 0) {
 		// If number is a perfect square, skip other steps
 		ans = [root, 1];
@@ -958,10 +960,10 @@ Calc.radical = function(num) {
 			}
 		}
 	}
-	
+
 	// Ensure number's sign is kept
 	ans[1] *= sign;
-	
+
 	return ans;
 };
 
@@ -987,7 +989,7 @@ Calc.commas = function(num) {
 	var parts = String(num).split('.');
 	// Do not convert if number is exponential
 	if (parts[0].indexOf('e') === -1) {
-		parts[0] = parts[0].replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,");
+		parts[0] = parts[0].replace(/(\d)(?=(\d\d\d)+(?!\d))/g, '$1,');
 	}
 	return parts.join('.');
 };
@@ -1077,7 +1079,7 @@ Calc.randInt = function(a, b) {
 };
 
 // Get a random selection of n items from an array
-Calc.randChoices = function(arr, n) {
+Calc.randChoices = Calc.choices = function(arr, n) {
 	return Calc.scramble(arr).slice(0, n || 1);
 };
 
@@ -1431,7 +1433,7 @@ matrix.identity = matrix.iden = function() {
 		r, c,
 		d = 0,
 		value;
-		
+
 	for (r = 0; r < cols; r += 1) {
 		iden[r] = [];
 		for (c = 0; c < cols; c += 1) {
@@ -1541,7 +1543,7 @@ function Set(s1) {
 Calc.set = function(s1) {
 	return new Set(s1);
 };
-set = Set.prototype;
+var set = Set.prototype;
 
 // Get union of two sets
 set.union = function(s2) {
