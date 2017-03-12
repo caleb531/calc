@@ -11,8 +11,8 @@ Calc is a JavaScript library that does the math so you don't have to.
 * Packed with over 80 functions
 * Easy to learn and extend
 
-## [Download](http://calebevans.me/calc/download.html)
+## [Download](https://calebevans.me/calc/download.html)
 
-## [Documentation](http://calebevans.me/calc/docs.html)
+## [Documentation](https://calebevans.me/calc/docs.html)
 
 ## [License](https://github.com/caleb531/calc/blob/master/license.txt)
