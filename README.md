@@ -1,5 +1,5 @@
 # Calc  
-*Copyright 2013, Caleb Evans*  
+*Copyright 2017, Caleb Evans*  
 *Licensed under the MIT license*  
 
 Calc is a JavaScript library that does the math so you don't have to.
