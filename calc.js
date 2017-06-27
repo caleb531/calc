@@ -579,9 +579,9 @@ Calc.permutations = Calc.perms = Calc.permute = function(arr, n) {
 			}
 		}
 
-    }
-    _permute([]);
-    return perms;
+	}
+	_permute([]);
+	return perms;
 };
 
 
